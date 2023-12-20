@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PackageId>MondaySharp.NET</PackageId>
+		<Authors>Andrew Eberle</Authors>
+		<RepositoryUrl>https://github.com/andreweberle/MondaySharp.NET</RepositoryUrl>
+		<PackageDescription>This package contains a Monday.com client</PackageDescription>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<Deterministic>False</Deterministic>
+		<Version>1.0.2</Version>
+		<VersionSuffix>alpha</VersionSuffix>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="GraphQL.Client" Version="6.0.2" />
+		<PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.2" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+		<PackageReference Include="System.Text.Json" Version="8.0.0" />
+	</ItemGroup>
+
+</Project>

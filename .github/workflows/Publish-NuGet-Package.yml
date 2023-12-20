@@ -1,0 +1,49 @@
+name: publish package to GitHub
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      REPOSITORY_URL: 'https://nuget.pkg.github.com/andreweberle/index.json'
+      OUTPUT_PROJECT: 'src/MondaySharp.NET/MondaySharp.NET.csproj'
+      USERNAME: 'andreweberle'
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --no-restore
+    
+    - name: Debug Workflow
+      run: |
+        pwd
+        ls -R
+
+    - name: Pack
+      run: dotnet pack ${{ env.OUTPUT_PROJECT }} -c Release
+
+    - name: Debug Workflow
+      run: |
+        pwd
+        ls -R
+    
+    #- name: Prep packages
+      #run: dotnet nuget add source --username ${{ env.USERNAME }} --password ${{ secrets.GH_PUBLISH_TOKEN }} --store-password-in-clear-text --name github "${{ env.REPOSITORY_URL }}"
+       
+    - name: Publish to GitHub packages 
+      run: dotnet nuget push ./src/MondaySharp.NET/bin/Release/*.nupkg --api-key ${{ secrets.GH_PUBLISH_TOKEN }} --source "github" --skip-duplicate
+
