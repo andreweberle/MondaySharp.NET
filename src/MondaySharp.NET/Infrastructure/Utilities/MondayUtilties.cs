@@ -22,17 +22,12 @@ public static partial class MondayUtilties
     /// <summary>
     /// 
     /// </summary>
-    private const string SUB_TASKS = "subtasks";
-
-    /// <summary>
-    /// 
-    /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="item"></param>
     /// <param name="destination"></param>
     /// <returns></returns>
     public static bool TryBindColumnDataAsync<T>(
-        Dictionary<string?, string> columnPropertyMap, Item item, ref T destination) where T : MondayRow, new()
+        Dictionary<string, string> columnPropertyMap, Item item, ref T destination) where T : MondayRow, new()
     {
         // Get The Destination Type.
         Type? destinationType = destination?.GetType();
@@ -49,7 +44,8 @@ public static partial class MondayUtilties
         SetPropertyIfExists(destinationType, nameof(item.Updates), item.Updates, destination);
 
         // Loop Through All Columns.
-        foreach (ColumnValue? columnValue in item.ColumnValues.Where(x => x.Type != Domain.Common.Enums.MondayColumnType.Subtasks))
+        foreach (ColumnValue? columnValue in item.ColumnValues
+            .Where(x => x.Type != Domain.Common.Enums.MondayColumnType.Subtasks))
         {
             if (columnPropertyMap.TryGetValue(columnValue.Id, out string? propertyName) || (columnValue.Id?.Replace(" ", "") == propertyName))
             {

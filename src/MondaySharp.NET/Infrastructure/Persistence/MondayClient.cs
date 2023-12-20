@@ -331,7 +331,8 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="items"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<Dictionary<string, Item>?> CreateBoardItemsAsync(ulong boardId, Item[] items, CancellationToken cancellationToken = default)
+    public async Task<Dictionary<string, Item>?> CreateBoardItemsAsync(ulong boardId, Item[] items, 
+        CancellationToken cancellationToken = default)
     {
         // If The GraphQL Client Is Null, Return Null.
         if (this._graphQLHttpClient == null) return null;
@@ -402,6 +403,81 @@ public partial class MondayClient : IMondayClient, IDisposable
             return graphQLResponse.Data;
         }
 
+        return default;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="updates"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="NullReferenceException"></exception>
+    public async Task<Dictionary<string, Update>?> CreateItemsUpdateAsync(
+        Update[] updates, 
+        CancellationToken cancellationToken = default)
+    {
+        // If The GraphQL Client Is Null, Return Null.
+        if (this._graphQLHttpClient == null) return null;
+
+        // Create The Response Parameters.
+        const string RESPONSE_PARAMS = @$"{{id text_body}}";
+
+        // Create parameters for the query
+        StringBuilder parameters = new();
+
+        // Create the mutation
+        StringBuilder mutation = new();
+
+        // Create a dictionary to store variables dynamically
+        Dictionary<string, object> variables = [];
+
+        // Append the parameters
+        foreach (var update in updates.Select((value, i) => new { i, value }))
+        {
+            // Check if there is an item name.
+            if (update.value.Id.GetValueOrDefault() == 0)
+            {
+                throw new NullReferenceException(nameof(update.value.Id));
+            }
+
+            // Generate a unique variable name based on the item index
+            string variableName = $"body{update.i}";
+
+            // Check if the column values are null
+            if (update.value.TextBody is not null)
+            {
+                // Add the variable to the dictionary
+                variables.Add(variableName, update.value.TextBody);
+
+                // Append the parameters
+                parameters.Append($"${variableName}: String!,");
+
+                // Append the mutation
+                mutation.Append($"create_update_{update.i}: create_update(item_id: {update.value.Id}, body: ${variableName}) {RESPONSE_PARAMS}");
+            }
+        }
+
+        // Construct the GraphQL query
+        GraphQLRequest keyValuePairs = new()
+        {
+            Query = $@"mutation ({parameters}) {{
+                {mutation}
+            }}",
+            Variables = variables
+        };
+
+        // Execute The Query.
+        GraphQLResponse<Dictionary<string, Update>> graphQLResponse = 
+            await this._graphQLHttpClient.SendMutationAsync<Dictionary<string, Update>>(keyValuePairs, cancellationToken);
+
+        // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
+        if (graphQLResponse.Errors is null && graphQLResponse.Data != null)
+        {
+            return graphQLResponse.Data;
+        }
+
+        // Return Null.
         return default;
     }
 }

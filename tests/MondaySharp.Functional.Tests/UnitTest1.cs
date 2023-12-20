@@ -254,6 +254,33 @@ public class UnitTest1
         Assert.IsTrue(keyValuePairs?.LastOrDefault().Value.Name == items.LastOrDefault()?.Name);
     }
 
+    [TestMethod]
+    public async Task CreateItemUpdate_Should_Be_Ok()
+    {
+        // Arrange
+        Update[] updates = [
+            new Update()
+            {
+                Id = 5718383580,
+                TextBody = "Test Update 1"
+            },
+            new Update()
+            {
+                Id = 5718383580,
+                TextBody = "Test Update 2"
+            }
+        ];
+
+        // Act
+        Dictionary<string, Update>? keyValuePairs = await this.MondayClient!.CreateItemsUpdateAsync(updates);
+
+        // Assert
+        Assert.IsTrue(keyValuePairs?.Count == 2);
+        Assert.IsTrue(keyValuePairs?.FirstOrDefault().Value.TextBody == updates.FirstOrDefault()?.TextBody);
+        Assert.IsTrue(keyValuePairs?.LastOrDefault().Value.TextBody == updates.LastOrDefault()?.TextBody);
+    }
+
+
     public record TestRowWithGroup : TestRow
     {
         public Group? Group { get; set; }
