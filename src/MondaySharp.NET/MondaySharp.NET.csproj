@@ -10,7 +10,7 @@
 		<PackageDescription>This package contains a Monday.com client</PackageDescription>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<Deterministic>False</Deterministic>
-		<Version>1.0.2</Version>
+		<Version>1.0.3</Version>
 		<VersionSuffix>alpha</VersionSuffix>
 	</PropertyGroup>
 
