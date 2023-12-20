@@ -41,8 +41,8 @@ jobs:
         pwd
         ls -R
     
-    #- name: Prep packages
-      #run: dotnet nuget add source --username ${{ env.USERNAME }} --password ${{ secrets.GH_PUBLISH_TOKEN }} --store-password-in-clear-text --name github "${{ env.REPOSITORY_URL }}"
+    - name: Prep packages
+      run: dotnet nuget add source --username ${{ env.USERNAME }} --password ${{ secrets.GH_PUBLISH_TOKEN }} --store-password-in-clear-text --name github "${{ env.REPOSITORY_URL }}"
        
     - name: Publish to GitHub packages 
       run: dotnet nuget push ./src/MondaySharp.NET/bin/Release/*.nupkg --api-key ${{ secrets.GH_PUBLISH_TOKEN }} --source "github" --skip-duplicate
