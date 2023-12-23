@@ -7,7 +7,7 @@ namespace MondaySharp.NET.Application.Entities;
 public record Item
 {
     [JsonProperty("id")]
-    public string? Id { get; set; }
+    public ulong Id { get; set; }
 
     [JsonProperty("name")]
     public string? Name { get; set; }

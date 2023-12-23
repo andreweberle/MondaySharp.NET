@@ -55,7 +55,7 @@ public class UnitTest1
         ];
 
         // Act
-        List<TestRow?> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId, columnValues).ToListAsync();
+        var items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId, columnValues).ToListAsync();
 
         // Assert
         Assert.IsTrue(items.Count > 0);
@@ -66,7 +66,7 @@ public class UnitTest1
     {
         // Arrange
         // Act
-        List<TestRow?> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId).ToListAsync();
+        var items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId).ToListAsync();
 
         // Assert
         Assert.IsTrue(items.Count > 0);
@@ -91,11 +91,11 @@ public class UnitTest1
         ];
 
         // Act
-        List<TestRowWithGroup?> items = await this.MondayClient!.GetBoardItemsAsync<TestRowWithGroup>(this.BoardId, columnValues).ToListAsync();
+       var items = await this.MondayClient!.GetBoardItemsAsync<TestRowWithGroup>(this.BoardId, columnValues).ToListAsync();
 
         // Assert
         Assert.IsTrue(items.Count > 0);
-        Assert.IsTrue(items.FirstOrDefault()?.Group != null);
+        Assert.IsTrue(items.FirstOrDefault()?.Data.Group != null);
     }
 
     [TestMethod]
@@ -117,11 +117,13 @@ public class UnitTest1
         ];
 
         // Act
-        List<TestRowWithAssets?> items = await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, columnValues).ToListAsync();
+        List<NET.Application.MondayResponse<TestRowWithAssets?>> mondayResponses = 
+            await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, columnValues).ToListAsync();
 
         // Assert
-        Assert.IsTrue(items.Count > 0);
-        Assert.IsTrue(items.FirstOrDefault()?.Assets?.Count > 0);
+
+        Assert.IsTrue(mondayResponses.Count > 0);
+        Assert.IsTrue(mondayResponses.FirstOrDefault()?.Data?.Assets?.Count > 0);
     }
 
     [TestMethod]
@@ -143,11 +145,11 @@ public class UnitTest1
         ];
 
         // Act
-        List<TestRowWithUpdates?> items = await this.MondayClient!.GetBoardItemsAsync<TestRowWithUpdates>(this.BoardId, columnValues).ToListAsync();
+        var items = await this.MondayClient!.GetBoardItemsAsync<TestRowWithUpdates>(this.BoardId, columnValues).ToListAsync();
 
         // Assert
         Assert.IsTrue(items.Count > 0);
-        Assert.IsTrue(items.FirstOrDefault()?.Updates?.Count > 0);
+        Assert.IsTrue(items.FirstOrDefault()?.Data.Updates?.Count > 0);
     }
 
     [TestMethod]
@@ -246,12 +248,15 @@ public class UnitTest1
         ];
 
         // Act
-        Dictionary<string, Item>? keyValuePairs = await this.MondayClient!.CreateBoardItemsAsync(BoardId, items);
+        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponse = 
+            await this.MondayClient!.CreateBoardItemsAsync(BoardId, items);
 
         // Assert
-        Assert.IsTrue(keyValuePairs?.Count == 2);
-        Assert.IsTrue(keyValuePairs?.FirstOrDefault().Value.Name == items.FirstOrDefault()?.Name);
-        Assert.IsTrue(keyValuePairs?.LastOrDefault().Value.Name == items.LastOrDefault()?.Name);
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+        Assert.IsTrue(mondayResponse.Data?.Count == 2);
+        Assert.IsTrue(mondayResponse.Data?.FirstOrDefault().Value.Name == items.FirstOrDefault()?.Name);
+        Assert.IsTrue(mondayResponse.Data?.LastOrDefault().Value.Name == items.LastOrDefault()?.Name);
     }
 
     [TestMethod]
@@ -272,14 +277,60 @@ public class UnitTest1
         ];
 
         // Act
-        Dictionary<string, Update>? keyValuePairs = await this.MondayClient!.CreateItemsUpdateAsync(updates);
+        NET.Application.MondayResponse<Dictionary<string, Update>?>? mondayResponse = await this.MondayClient!.CreateItemsUpdateAsync(updates);
 
         // Assert
-        Assert.IsTrue(keyValuePairs?.Count == 2);
-        Assert.IsTrue(keyValuePairs?.FirstOrDefault().Value.TextBody == updates.FirstOrDefault()?.TextBody);
-        Assert.IsTrue(keyValuePairs?.LastOrDefault().Value.TextBody == updates.LastOrDefault()?.TextBody);
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+        Assert.IsTrue(mondayResponse.Data?.Count == 2);
+        Assert.IsTrue(mondayResponse.Data?.FirstOrDefault().Value.TextBody == updates.FirstOrDefault()?.TextBody);
+        Assert.IsTrue(mondayResponse.Data?.LastOrDefault().Value.TextBody == updates.LastOrDefault()?.TextBody);
     }
 
+    [TestMethod]
+    public async Task DeleteItem_Should_Be_Ok()
+    {
+        // Arrange
+        Item item = new()
+        {
+            Id = 4784909898
+        };
+
+        // Act
+        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponse = 
+            await this.MondayClient!.DeleteItemsAsync([item]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+        Assert.IsTrue(mondayResponse.Data?.Count == 1);
+        Assert.IsTrue(mondayResponse.Data?.FirstOrDefault().Value.Id == item.Id);
+    }
+
+    [TestMethod]
+    public async Task DeleteItems_Should_Be_Ok()
+    {
+        // Arrange
+        Item item = new()
+        {
+            Id = 5737886669
+        };
+        Item item2 = new()
+        {
+            Id = 5737886700
+        };
+
+        // Act
+        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponse =
+            await this.MondayClient!.DeleteItemsAsync([item, item2]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+        Assert.IsTrue(mondayResponse.Data?.Count == 2);
+        Assert.IsTrue(mondayResponse.Data?.FirstOrDefault().Value.Id == item.Id);
+        Assert.IsTrue(mondayResponse.Data?.LastOrDefault().Value.Id == item2.Id);
+    }
 
     public record TestRowWithGroup : TestRow
     {

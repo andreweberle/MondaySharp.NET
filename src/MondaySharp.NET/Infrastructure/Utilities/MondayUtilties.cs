@@ -19,6 +19,22 @@ public static partial class MondayUtilties
     /// </summary>
     private static readonly Regex UrlRegex = UrlFromStringExtractor();
 
+
+    public static readonly Dictionary<Type, string> GetItemsQueryBuilder = new()
+    {
+        { typeof(MondaySharp.NET.Application.Entities.Group), @"group { id title color archived deleted position }" },
+        { typeof(List<MondaySharp.NET.Application.Entities.Asset>), @"assets { id name public_url url_thumbnail created_at }" },
+        { typeof(List<MondaySharp.NET.Application.Entities.Update>), @"updates (limit: 100) { id text_body }" }
+    };
+
+    // Define the supported types and their corresponding error messages
+    public static readonly Dictionary<Type, string> UnsupportedTypes = new()
+    {
+        { typeof(MondaySharp.NET.Application.Entities.Group), "Multiple Group Properties Are Not Supported." },
+        { typeof(List<MondaySharp.NET.Application.Entities.Asset>), "Multiple Asset Properties Are Not Supported." },
+        { typeof(List<MondaySharp.NET.Application.Entities.Update>), "Multiple Update Properties Are Not Supported." }
+    };
+
     /// <summary>
     /// 
     /// </summary>
@@ -36,7 +52,7 @@ public static partial class MondayUtilties
         if (destinationType == null || destination == null) return false;
 
         // Assign Default Values.
-        if (ulong.TryParse(item.Id, out ulong id)) destination.Id = id;
+        destination.Id = item.Id;
         destination.Name = new ColumnText(nameof(item.Name), item.Name);
 
         SetPropertyIfExists(destinationType, nameof(item.Group), item.Group, destination);
