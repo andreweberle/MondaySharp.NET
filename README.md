@@ -177,17 +177,6 @@ List<ColumnBaseType> columnValues =
 First provide the `columnId` and then filling the rest.
 
 Here is the interface thusfar.
-
-```csharp
-public interface IMondayClient
-{
-    public IAsyncEnumerable<T?> GetBoardItemsAsync<T>(ulong boardId, ColumnValue[] columnValues, int limit = 25, CancellationToken cancellationToken = default) where T : MondayRow, new();
-    public IAsyncEnumerable<T?> GetBoardItemsAsync<T>(ulong boardId, int limit = 25, CancellationToken cancellationToken = default) where T : MondayRow, new();
-    public Task<Dictionary<string, Item>?> CreateBoardItemsAsync(ulong boardId, Item[] items, CancellationToken cancellationToken = default);
-    public void Dispose();
-}
-```
-
 For detailed usage instructions and examples, refer to the [Documentation](./docs/).
 
 ## Installation
