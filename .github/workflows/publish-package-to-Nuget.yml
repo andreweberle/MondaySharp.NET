@@ -1,0 +1,43 @@
+name: publish package to NuGet
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      REPOSITORY_URL: 'https://api.nuget.org/v3/index.json'
+      OUTPUT_PROJECT: 'src/MondaySharp.NET/MondaySharp.NET.csproj'
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 8.0.x
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Build
+      run: dotnet build --no-restore
+    
+    - name: Debug Workflow
+      run: |
+        pwd
+        ls -R
+    - name: Pack
+      run: dotnet pack ${{ env.OUTPUT_PROJECT }} -c Release
+
+    - name: Debug Workflow
+      run: |
+        pwd
+        ls -R
+    
+    - name: Publish to NuGet 
+      run: dotnet nuget push ./src/MondaySharp.NET/bin/Release/*.nupkg --api-key ${{ secrets.NUGET_KEY }} --source ${{ env.REPOSITORY_URL }} --skip-duplicate
