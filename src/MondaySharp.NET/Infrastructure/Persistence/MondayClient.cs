@@ -113,7 +113,7 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public async IAsyncEnumerable<Application.MondayResponse<T?>> GetBoardItemsAsync<T>(ulong boardId, ColumnValue[] columnValues, int limit = 25,
+    public async IAsyncEnumerable<Application.MondayResponse<T?>> GetBoardItemsAsEnumerableAsync<T>(ulong boardId, ColumnValue[] columnValues, int limit = 25,
         [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
         // If The GraphQL Client Is Null, Return Null.
@@ -223,7 +223,7 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public async IAsyncEnumerable<Application.MondayResponse<T?>> GetBoardItemsAsync<T>(ulong boardId, int limit = 25, 
+    public async IAsyncEnumerable<Application.MondayResponse<T?>> GetBoardItemsAsEnumerableAsync<T>(ulong boardId, int limit = 25, 
         [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
         // If The GraphQL Client Is Null, Return Null.
@@ -389,12 +389,19 @@ public partial class MondayClient : IMondayClient, IDisposable
                 parameters.Append($"${variableName}: JSON,");
 
                 // Append the mutation
-                mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name}\", column_values: ${variableName}) {RESPONSE_PARAMS}");
+                mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name}\", group_id: $groupId_{item.i}, column_values: ${variableName}) {RESPONSE_PARAMS}");
             }
             else
             {
                 // Append the mutation
-                mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name}\") {RESPONSE_PARAMS}");
+                mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name}\", group_id: $groupId_{item.i}) {RESPONSE_PARAMS}");
+            }
+
+            if (item.value.Group is not null
+                && !string.IsNullOrEmpty(item.value.Group.Id))
+            {
+                variables.Add($"groupId_{item.i}", item.value.Group.Id);
+                parameters.Append($"$groupId_{item.i}: String,");
             }
         }
 
@@ -605,5 +612,90 @@ public partial class MondayClient : IMondayClient, IDisposable
             IsSuccessful = false,
             Errors = []
         };
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="limit"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async IAsyncEnumerable<Application.MondayResponse<Board>> GetBoardsAsEnumerableAsync(
+        ulong[]? boardIds = null,
+        int limit = 10,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        // If The GraphQL Client Is Null, Return Null.
+        if (this._graphQLHttpClient == null)
+        {
+            yield return new Application.MondayResponse<Board>()
+            {
+                IsSuccessful = false,
+                Errors = ["GraphQL Client Is Null."]
+            };
+
+            yield break;
+        }
+
+        // Create The Response Parameters.
+        const string RESPONSE_PARAMS = @$"{{id name state board_kind board_folder_id description workspace_id item_terminology items_count permissions}}";
+
+        // Create parameters for the query
+        StringBuilder parameters = new();
+
+        // Append the parameters
+        parameters.Append("$limit: Int,");
+
+        // Create a dictionary to store variables dynamically
+        Dictionary<string, object> variables = new()
+        {
+            { "limit", limit }
+        };
+
+        // Check if the board ids are not null and the length is greater than 0
+        if (boardIds is not null && boardIds.Length > 0)
+        {
+            // Append the parameters
+            parameters.Append("$boardIds: [ID!],");
+            variables.Add("boardIds", boardIds);
+        }
+
+        // Construct the GraphQL query
+        GraphQLRequest keyValuePairs = new()
+        {
+            Query = $@"query ({parameters}) {{
+            boards(limit: $limit{((boardIds is not null && boardIds.Length > 0) ? ",ids: $boardIds" : "")})  
+            {RESPONSE_PARAMS}
+            }}",
+            Variables = variables
+        };
+
+        // Execute The Query.
+        GraphQLResponse<GetBoardsResponse> graphQLResponse =
+            await this._graphQLHttpClient.SendQueryAsync<GetBoardsResponse>(keyValuePairs, cancellationToken);
+
+        // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
+        if (graphQLResponse.Errors is null && graphQLResponse.Data?.Boards?.Count > 0)
+        {
+            foreach (Board board in graphQLResponse.Data.Boards)
+            {
+                // Check if we need to break out of the loop
+                if (cancellationToken.IsCancellationRequested) yield break;
+
+                yield return new Application.MondayResponse<Board>()
+                {
+                    IsSuccessful = true,
+                    Data = board
+                };
+            }
+        }
+        else if (graphQLResponse.Errors is not null)
+        {
+            yield return new Application.MondayResponse<Board>()
+            {
+                IsSuccessful = false,
+                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+            };
+        }
     }
 }

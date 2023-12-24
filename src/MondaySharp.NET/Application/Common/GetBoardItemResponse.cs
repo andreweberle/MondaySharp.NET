@@ -15,6 +15,10 @@ internal class GetBoardItemsResponse
     public List<Board>? Boards { get; set; }
 }
 
+internal class GetBoardsResponse : GetBoardItemsResponse
+{
+}
+
 public class ItemsPageByColumnValue
 {
     public string? Cursor { get; set; }

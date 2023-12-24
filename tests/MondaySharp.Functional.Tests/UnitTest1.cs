@@ -55,7 +55,7 @@ public class UnitTest1
         ];
 
         // Act
-        var items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId, columnValues).ToListAsync();
+        var items = await this.MondayClient!.GetBoardItemsAsEnumerableAsync<TestRow>(this.BoardId, columnValues).ToListAsync();
 
         // Assert
         Assert.IsTrue(items.Count > 0);
@@ -66,7 +66,7 @@ public class UnitTest1
     {
         // Arrange
         // Act
-        var items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId).ToListAsync();
+        var items = await this.MondayClient!.GetBoardItemsAsEnumerableAsync<TestRow>(this.BoardId).ToListAsync();
 
         // Assert
         Assert.IsTrue(items.Count > 0);
@@ -91,11 +91,11 @@ public class UnitTest1
         ];
 
         // Act
-       var items = await this.MondayClient!.GetBoardItemsAsync<TestRowWithGroup>(this.BoardId, columnValues).ToListAsync();
+       var items = await this.MondayClient!.GetBoardItemsAsEnumerableAsync<TestRowWithGroup>(this.BoardId, columnValues).ToListAsync();
 
         // Assert
         Assert.IsTrue(items.Count > 0);
-        Assert.IsTrue(items.FirstOrDefault()?.Data.Group != null);
+        Assert.IsTrue(items.FirstOrDefault()?.Data?.Group != null);
     }
 
     [TestMethod]
@@ -118,7 +118,7 @@ public class UnitTest1
 
         // Act
         List<NET.Application.MondayResponse<TestRowWithAssets?>> mondayResponses = 
-            await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, columnValues).ToListAsync();
+            await this.MondayClient!.GetBoardItemsAsEnumerableAsync<TestRowWithAssets>(this.BoardId, columnValues).ToListAsync();
 
         // Assert
 
@@ -145,7 +145,7 @@ public class UnitTest1
         ];
 
         // Act
-        var items = await this.MondayClient!.GetBoardItemsAsync<TestRowWithUpdates>(this.BoardId, columnValues).ToListAsync();
+        var items = await this.MondayClient!.GetBoardItemsAsEnumerableAsync<TestRowWithUpdates>(this.BoardId, columnValues).ToListAsync();
 
         // Assert
         Assert.IsTrue(items.Count > 0);
@@ -202,6 +202,7 @@ public class UnitTest1
             new Item()
             {
                 Name = "Test Item 1",
+                Group = new Group() { Id = "new_group53864" },
                 ColumnValues =
                 [
                     new ColumnValue()
@@ -225,6 +226,7 @@ public class UnitTest1
             new Item()
             {
                 Name = "Test Item 2",
+                Group = new Group() { Id = "new_group22583" },
                 ColumnValues =
                 [
                     new ColumnValue()
@@ -330,6 +332,45 @@ public class UnitTest1
         Assert.IsTrue(mondayResponse.Data?.Count == 2);
         Assert.IsTrue(mondayResponse.Data?.FirstOrDefault().Value.Id == item.Id);
         Assert.IsTrue(mondayResponse.Data?.LastOrDefault().Value.Id == item2.Id);
+    }
+
+    [TestMethod]
+    public async Task GetBoardById_Should_Be_Ok()
+    {
+        // Arrange
+
+        // Act
+        List<NET.Application.MondayResponse<Board>> mondayResponse = 
+            await this.MondayClient!.GetBoardsAsEnumerableAsync([this.BoardId]).ToListAsync();
+
+        // Assert
+        Assert.IsTrue(mondayResponse.Count == 1);
+        Assert.IsTrue(mondayResponse.FirstOrDefault()?.Data?.Id == this.BoardId);
+        Assert.IsTrue(mondayResponse.All(x => x.IsSuccessful));
+        Assert.IsTrue(mondayResponse.All(x => x.Errors == null));
+    }
+
+    [TestMethod]
+    public async Task GetBoards_Should_Be_Ok()
+    {
+        // Arrange
+        // Act
+        List<NET.Application.MondayResponse<Board>> boards = await this.MondayClient!.GetBoardsAsEnumerableAsync().ToListAsync();
+
+        // Assert
+        Assert.IsTrue(boards.Count <= 10);
+    }
+
+    [TestMethod]
+    public async Task UploadFileToItem_Should_Be_Ok()
+    {
+        throw new NotImplementedException();
+    }
+
+    [TestMethod]
+    public async Task UploadFileToItemColumn_Should_Be_Ok()
+    {
+        throw new NotImplementedException();
     }
 
     public record TestRowWithGroup : TestRow

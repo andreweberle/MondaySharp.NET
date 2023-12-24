@@ -1,6 +1,4 @@
-﻿using MondaySharp.NET.Application.Entities;
-
-namespace MondaySharp.NET.Application;
+﻿namespace MondaySharp.NET.Application;
 
 public record MondayResponse<T>
 {
