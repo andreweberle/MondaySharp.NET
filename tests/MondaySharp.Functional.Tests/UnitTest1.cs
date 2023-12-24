@@ -373,6 +373,41 @@ public class UnitTest1
         throw new NotImplementedException();
     }
 
+    [TestMethod]
+    public void Deserialize_Update_Response_Should_Be_Ok()
+    {
+        const string DATA = "{\"id\":\"1187128743\",\"text_body\":\"Text\"}";
+        using JsonDocument jsonDocument = JsonDocument.Parse(DATA);
+
+        Update? update = Newtonsoft.Json.JsonConvert.DeserializeObject<Update>(DATA);
+        Assert.IsNotNull(update);
+        Assert.IsTrue(update?.Id == 1187128743);
+    }
+
+    [TestMethod]
+    public async Task UploadFileToUpdate_Should_Be_Ok()
+    {
+        // Arrange
+        Update update0 = new()
+        {
+            Id = 2627497624,
+            FileUpload = new FileUpload() { FileName = "test.txt", ByteArrayContent = new ByteArrayContent(File.ReadAllBytes("test.txt")) }
+        };
+        Update update1 = new()
+        {
+            Id = 2627506728,
+            FileUpload = new FileUpload() { FileName = "test.txt", ByteArrayContent = new ByteArrayContent(File.ReadAllBytes("test.txt")) }
+        };
+
+        // Act
+        var mondayResponse = await this.MondayClient!.UpdateFilesToUpdateAsync([update0, update1]).ToListAsync();
+
+        // Assert
+        Assert.IsTrue(mondayResponse.Count == 2);
+        Assert.IsTrue(mondayResponse.All(x => x.IsSuccessful));
+        Assert.IsTrue(mondayResponse.All(x => x.Errors is null));
+    }
+
     public record TestRowWithGroup : TestRow
     {
         public Group? Group { get; set; }

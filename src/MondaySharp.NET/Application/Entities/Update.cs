@@ -5,10 +5,19 @@ namespace MondaySharp.NET.Application.Entities;
 
 public record Update
 {
-    [JsonProperty("id")]
-    [JsonConverter(typeof(StringToULongJsonConverter))]
+    [Newtonsoft.Json.JsonProperty("id")]
+    [Newtonsoft.Json.JsonConverter(typeof(StringToULongJsonConverter))]
     public ulong? Id { get; set; }
 
     [JsonProperty("text_body")]
     public string? TextBody { get; set; }
+
+    [JsonIgnore]
+    public FileUpload? FileUpload { get; set; }
+}
+
+public record FileUpload
+{
+    public string? FileName { get; set; }
+    public ByteArrayContent? ByteArrayContent { get; set; }
 }

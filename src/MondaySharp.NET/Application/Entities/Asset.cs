@@ -20,4 +20,19 @@ public record Asset
 
     [JsonProperty("created_at")]
     public DateTimeOffset? CreatedAt { get; set; }
- }
+
+    [JsonProperty("file_extension")]
+    public string? FileExtension { get; set; }
+
+    [JsonProperty("file_size")]
+    public ulong? FileSize { get; set; }
+
+    [JsonProperty("original_geometry")]
+    public string? OriginalGeometry { get; set; }
+
+    [JsonProperty("uploaded_by")]
+    public MondaySharp.NET.Application.Entities.User? UploadedBy { get; set; }
+
+    [JsonProperty("url")]
+    public Uri? Url { get; set; }
+}
