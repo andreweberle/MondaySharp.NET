@@ -295,12 +295,43 @@ public class UnitTest1
         // Arrange
         Item item = new()
         {
-            Id = 4784909898
+            Name = "Test Item 1",
+            Group = new Group() { Id = "new_group53864" },
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text0",
+                        Text = "Andrew Eberle"
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnNumber()
+                    {
+                        Id = "numbers9",
+                        Number = 10
+                    },
+                },
+            ]
         };
 
         // Act
         NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponse = 
-            await this.MondayClient!.DeleteItemsAsync([item]);
+            await this.MondayClient!.CreateBoardItemsAsync(this.BoardId, [item]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+        Assert.IsTrue(mondayResponse.Data?.Count == 1);
+
+        // Assign the id to the item
+        item.Id = mondayResponse.Data.FirstOrDefault().Value.Id;
+
+        // Act
+        mondayResponse = await this.MondayClient!.DeleteItemsAsync([item]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -315,12 +346,67 @@ public class UnitTest1
         // Arrange
         Item item = new()
         {
-            Id = 5737886669
+            Name = "Test Item 1",
+            Group = new Group() { Id = "new_group53864" },
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text0",
+                        Text = "Andrew Eberle"
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnNumber()
+                    {
+                        Id = "numbers9",
+                        Number = 10
+                    },
+                },
+            ]
         };
         Item item2 = new()
         {
-            Id = 5737886700
+            Name = "Test Item 2",
+            Group = new Group() { Id = "new_group22583" },
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text0",
+                        Text = "Eberle Andrew"
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnNumber()
+                    {
+                        Id = "numbers9",
+                        Number = 11
+                    },
+                },
+            ]
         };
+
+        // Create the items
+        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseCreate = 
+            await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item, item2]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseCreate.IsSuccessful);
+        Assert.IsNull(mondayResponseCreate.Errors);
+        Assert.IsTrue(mondayResponseCreate.Data?.Count == 2);
+        Assert.IsTrue(mondayResponseCreate.Data?.FirstOrDefault().Value.Name == item.Name);
+        Assert.IsTrue(mondayResponseCreate.Data?.LastOrDefault().Value.Name == item2.Name);
+
+        // Assign the ids to the items
+        item.Id = mondayResponseCreate.Data.FirstOrDefault().Value.Id;
+        item2.Id = mondayResponseCreate.Data.LastOrDefault().Value.Id;
 
         // Act
         NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponse =
