@@ -396,12 +396,12 @@ public partial class MondayClient : IMondayClient, IDisposable
                 parameters.Append($"${variableName}: JSON,");
 
                 // Append the mutation
-                mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name}\", group_id: $groupId_{item.i}, column_values: ${variableName}) {RESPONSE_PARAMS}");
+                mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name}\", {(item.value.Group is not null ? $"group_id: $groupId_{item.i}," : "")} column_values: ${variableName}) {RESPONSE_PARAMS}");
             }
             else
             {
                 // Append the mutation
-                mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name}\", group_id: $groupId_{item.i}) {RESPONSE_PARAMS}");
+                mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name}\", , {(item.value.Group is not null ? $"group_id: $groupId_{item.i}," : "")}) {RESPONSE_PARAMS}");
             }
 
             if (item.value.Group is not null
@@ -587,7 +587,6 @@ public partial class MondayClient : IMondayClient, IDisposable
             Query = $@"mutation ({parameters}) {{
                 {mutation}
             }}",
-
             Variables = variables
         };
 
@@ -627,21 +626,19 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="limit"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async IAsyncEnumerable<Application.MondayResponse<Board>> GetBoardsAsEnumerableAsync(
+    public async Task<Application.MondayResponse<List<Board>>> GetBoardsAsync(
         ulong[]? boardIds = null,
         int limit = 10,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default)
     {
         // If The GraphQL Client Is Null, Return Null.
         if (this._graphQLHttpClient == null)
         {
-            yield return new Application.MondayResponse<Board>()
+            return new Application.MondayResponse<List<Board>>()
             {
                 IsSuccessful = false,
                 Errors = ["GraphQL Client Is Null."]
             };
-
-            yield break;
         }
 
         // Create The Response Parameters.
@@ -684,26 +681,27 @@ public partial class MondayClient : IMondayClient, IDisposable
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
         if (graphQLResponse.Errors is null && graphQLResponse.Data?.Boards?.Count > 0)
         {
-            foreach (Board board in graphQLResponse.Data.Boards)
+            return new Application.MondayResponse<List<Board>>()
             {
-                // Check if we need to break out of the loop
-                if (cancellationToken.IsCancellationRequested) yield break;
-
-                yield return new Application.MondayResponse<Board>()
-                {
-                    IsSuccessful = true,
-                    Data = board
-                };
-            }
+                IsSuccessful = true,
+                Data = graphQLResponse.Data.Boards
+            };
         }
         else if (graphQLResponse.Errors is not null)
         {
-            yield return new Application.MondayResponse<Board>()
+            return new Application.MondayResponse<List<Board>>()
             {
                 IsSuccessful = false,
                 Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
             };
         }
+
+        // Return Null.
+        return new Application.MondayResponse<List<Board>>()
+        {
+            IsSuccessful = false,
+            Errors = []
+        };
     }
 
     public async IAsyncEnumerable<Application.MondayResponse<Dictionary<string, Asset?>?>> UpdateFilesToUpdateAsync(
@@ -730,7 +728,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         StringBuilder mutation = new();
 
         // Create a dictionary to store variables dynamically
-        using MultipartFormDataContent multipartFormDataContent = new();
+        using MultipartFormDataContent multipartFormDataContent = [];
 
         // Append the parameters
         foreach (var update in updates.Select((value, i) => new { i, value }))

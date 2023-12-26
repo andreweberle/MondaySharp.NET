@@ -10,7 +10,7 @@ public interface IMondayClient
     public Task<MondayResponse<Dictionary<string, Item>?>> CreateBoardItemsAsync(ulong boardId, Item[] items, CancellationToken cancellationToken = default);
     public Task<MondayResponse<Dictionary<string, Update>?>> CreateItemsUpdateAsync(Update[] updates, CancellationToken cancellationToken = default);
     public Task<MondayResponse<Dictionary<string, Item>?>> DeleteItemsAsync(Item[] items, CancellationToken cancellationToken = default);
-    public IAsyncEnumerable<MondayResponse<Board>> GetBoardsAsEnumerableAsync(ulong[]? boardIds = null, int limit = 10, CancellationToken cancellationToken = default);
+    public Task<Application.MondayResponse<List<Board>>> GetBoardsAsync(ulong[]? boardIds = null, int limit = 10, CancellationToken cancellationToken = default);
     public IAsyncEnumerable<Application.MondayResponse<Dictionary<string, Asset?>?>> UpdateFilesToUpdateAsync(Update[] updates, CancellationToken cancellationToken = default);
     public void Dispose();
 }
