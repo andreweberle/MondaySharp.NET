@@ -704,19 +704,18 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
     }
 
-    public async IAsyncEnumerable<Application.MondayResponse<Dictionary<string, Asset?>?>> UpdateFilesToUpdateAsync(
+    public async Task<Application.MondayResponse<Dictionary<string, Asset>>> UpdateFilesToUpdateAsync(
         Update[] updates,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default)
     {
         // If The GraphQL Client Is Null, Return Null.
         if (this._graphQLHttpClient == null)
         {
-            yield return new Application.MondayResponse<Dictionary<string, Asset?>?>()
+            return new Application.MondayResponse<Dictionary<string, Asset>>()
             {
                 IsSuccessful = false,
                 Errors = ["GraphQL Client Is Null."]
             };
-            yield break;
         }
         // Create The Response Parameters.
         const string RESPONSE_PARAMS = @$"{{id}}";
@@ -736,7 +735,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             // Check if there is an item name.
             if (update.value.Id.GetValueOrDefault() == 0)
             {
-                yield return new Application.MondayResponse<Dictionary<string, Asset?>?>()
+                return new Application.MondayResponse<Dictionary<string, Asset>>()
                 {
                     IsSuccessful = false,
                     Errors = ["Update Id Is Null."]
@@ -780,31 +779,38 @@ public partial class MondayClient : IMondayClient, IDisposable
         using JsonDocument jsonDocument = JsonDocument.Parse(rawResponse);
 
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
-        if (httpResponseMessage.IsSuccessStatusCode && jsonDocument.RootElement.TryGetProperty("data", out JsonElement data))
+        if (httpResponseMessage.IsSuccessStatusCode 
+            && jsonDocument.RootElement.TryGetProperty("data", out JsonElement data))
         {
+            Application.MondayResponse<Dictionary<string, Asset>> response = new()
+            {
+                IsSuccessful = true,
+                Data = []
+            };
+
             // Loop through each property
             foreach (JsonProperty property in data.EnumerateObject())
             {
                 // Check if the property is an object
                 if (property.Value.ValueKind == JsonValueKind.Object)
                 {
-                    // Return the update
-                    yield return new Application.MondayResponse<Dictionary<string, Asset?>?>()
+                    // Converstion was created with the Newtonsoft
+                    Asset? asset = Newtonsoft.Json.JsonConvert.DeserializeObject<Asset>(property.Value.GetRawText());
+
+                    // Check if the asset is not null
+                    if (asset is not null)
                     {
-                        IsSuccessful = true,
-                        Data = new Dictionary<string, Asset?> ()
-                        {
-                            // Converstion was created with the Newtonsoft
-                            { property.Name, Newtonsoft.Json.JsonConvert.DeserializeObject<Asset>(property.Value.GetRawText())}
-                        }
-                    };
+                        response.Data?.Add(property.Name, asset);
+                    }
                 }
             }
+
+            return response;
         }
         else
         {
             // Create the response
-            Application.MondayResponse<Dictionary<string, Asset?>?> response = new()
+            Application.MondayResponse<Dictionary<string, Asset>> response = new()
             {
                 IsSuccessful = false
             };
@@ -829,7 +835,7 @@ public partial class MondayClient : IMondayClient, IDisposable
                 response.Errors = [rawResponse];
             }
 
-            yield return response;
+            return response;
         }
     }
 }

@@ -541,13 +541,13 @@ public class UnitTest1
         };
 
         // Act
-        List<NET.Application.MondayResponse<Dictionary<string, Asset?>?>> uploadFilesMondayResponse = 
-            this.MondayClient!.UpdateFilesToUpdateAsync([update0, update1]).ToBlockingEnumerable().ToList();
+        NET.Application.MondayResponse<Dictionary<string, Asset>> uploadFilesMondayResponse =
+            await this.MondayClient!.UpdateFilesToUpdateAsync([update0, update1]);
 
         // Assert
-        Assert.IsTrue(uploadFilesMondayResponse.Count == 2);
-        Assert.IsTrue(uploadFilesMondayResponse.All(x => x.IsSuccessful));
-        Assert.IsTrue(uploadFilesMondayResponse.All(x => x.Errors is null));
+        Assert.IsTrue(uploadFilesMondayResponse.Data?.Count == 2);
+        Assert.IsTrue(uploadFilesMondayResponse.IsSuccessful);
+        Assert.IsTrue(uploadFilesMondayResponse.Errors is null);
 
         // Delete the item
         NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseDelete = 
