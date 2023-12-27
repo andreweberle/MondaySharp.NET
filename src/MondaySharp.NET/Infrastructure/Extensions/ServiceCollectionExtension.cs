@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using MondaySharp.NET.Application.Interfaces;
 using MondaySharp.NET.Domain.Common;
-using MondaySharp.NET.Infrastructure.Persistence;
 
 namespace MondaySharp.NET.Infrastructure.Extensions;
 
@@ -25,7 +25,7 @@ public static class ServiceCollectionExtension
         services.TryAddSingleton(mondayOptions);
 
         // Add Monday Client To The Service Collection.
-        services.TryAddSingleton<MondayClient>();
+        services.TryAddSingleton<IMondayClient>();
 
         // Return The Service Collection.
         return services;
