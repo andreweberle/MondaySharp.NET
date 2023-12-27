@@ -19,5 +19,6 @@ public record Update
 public record FileUpload
 {
     public string? FileName { get; set; }
-    public ByteArrayContent? ByteArrayContent { get; set; }
+    public StreamContent? StreamContent { get; set; }
+    public string? ColumnId { get; set; }
 }

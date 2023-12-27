@@ -449,15 +449,108 @@ public class UnitTest1
     }
 
     [TestMethod]
-    public async Task UploadFileToItem_Should_Be_Ok()
-    {
-        throw new NotImplementedException();
-    }
-
-    [TestMethod]
     public async Task UploadFileToItemColumn_Should_Be_Ok()
     {
-        throw new NotImplementedException();
+        // Arrange
+        Item item = new()
+        {
+            Name = "Test Item 1",
+            Group = new Group() { Id = "new_group53864" },
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text0",
+                        Text = "Andrew Eberle"
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnNumber()
+                    {
+                        Id = "numbers9",
+                        Number = 10
+                    },
+                },
+            ]
+        };
+        Item item1 = new()
+        {
+            Name = "Test Item 2",
+            Group = new Group() { Id = "new_group53864" },
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text0",
+                        Text = "Andrew Eberle"
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnNumber()
+                    {
+                        Id = "numbers9",
+                        Number = 10
+                    },
+                },
+            ]
+        };
+
+        // Create the item
+        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseCreate = 
+            await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item, item1]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseCreate.IsSuccessful);
+        Assert.IsNull(mondayResponseCreate.Errors);
+        Assert.IsTrue(mondayResponseCreate.Data?.Count == 2);
+        Assert.IsTrue(mondayResponseCreate.Data?.FirstOrDefault().Value.Name == item.Name);
+        Assert.IsTrue(mondayResponseCreate.Data?.LastOrDefault().Value.Name == item1.Name);
+
+        item.Id = mondayResponseCreate.Data.FirstOrDefault().Value.Id;
+        item1.Id = mondayResponseCreate.Data.LastOrDefault().Value.Id;
+
+        // Arrange
+        FileUpload fileUpload = new()
+        {
+            FileName = "test.txt",
+            StreamContent = new StreamContent(File.OpenRead("test.txt")),
+            ColumnId = "files4"
+        };
+        FileUpload fileUpload1 = new()
+        {
+            FileName = "test.txt",
+            StreamContent = new StreamContent(File.OpenRead("test.txt")),
+            ColumnId = "files4"
+        };
+
+        item.FileUpload = fileUpload;
+        item1.FileUpload = fileUpload1;
+
+        // Act
+        NET.Application.MondayResponse<Dictionary<string, Asset>> uploadFilesMondayResponse =
+            await this.MondayClient!.UploadFileToColumnAsync([item, item1]);
+
+        // Assert
+        Assert.IsTrue(uploadFilesMondayResponse.Data?.Count == 2);
+        Assert.IsTrue(uploadFilesMondayResponse.IsSuccessful);
+        Assert.IsTrue(uploadFilesMondayResponse.Errors is null);
+
+        // Delete the item
+        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseDelete = 
+            await this.MondayClient!.DeleteItemsAsync([item, item1]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseDelete.IsSuccessful);
+        Assert.IsNull(mondayResponseDelete.Errors);
+        Assert.IsTrue(mondayResponseDelete.Data?.Count == 2);
+        Assert.IsTrue(mondayResponseDelete.Data?.FirstOrDefault().Value.Id == item.Id);
+        Assert.IsTrue(mondayResponseDelete.Data?.LastOrDefault().Value.Id == item1.Id);
     }
 
     [TestMethod]
@@ -532,17 +625,17 @@ public class UnitTest1
         Update update0 = new()
         {
             Id = mondayResponse.Data.FirstOrDefault().Value.Id,
-            FileUpload = new FileUpload() { FileName = "test.txt", ByteArrayContent = new ByteArrayContent(File.ReadAllBytes("test.txt")) }
+            FileUpload = new FileUpload() { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
         Update update1 = new()
         {
             Id = mondayResponse.Data.FirstOrDefault().Value.Id,
-            FileUpload = new FileUpload() { FileName = "test.txt", ByteArrayContent = new ByteArrayContent(File.ReadAllBytes("test.txt")) }
+            FileUpload = new FileUpload() { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
 
         // Act
         NET.Application.MondayResponse<Dictionary<string, Asset>> uploadFilesMondayResponse =
-            await this.MondayClient!.UpdateFilesToUpdateAsync([update0, update1]);
+            await this.MondayClient!.UploadFileToUpdateAsync([update0, update1]);
 
         // Assert
         Assert.IsTrue(uploadFilesMondayResponse.Data?.Count == 2);

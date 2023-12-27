@@ -704,7 +704,13 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
     }
 
-    public async Task<Application.MondayResponse<Dictionary<string, Asset>>> UpdateFilesToUpdateAsync(
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="updates"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task<Application.MondayResponse<Dictionary<string, Asset>>> UploadFileToUpdateAsync(
         Update[] updates,
         CancellationToken cancellationToken = default)
     {
@@ -746,7 +752,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             string variableName = $"file{update.i}";
 
             // Check if the column values are null
-            if (update.value.FileUpload?.ByteArrayContent is not null && update.value.FileUpload.FileName is not null)
+            if (update.value.FileUpload?.StreamContent is not null && update.value.FileUpload.FileName is not null)
             {
                 // Append the parameters
                 parameters.Append($"${variableName}: File!, $updateId{update.i}: ID!,");
@@ -755,7 +761,7 @@ public partial class MondayClient : IMondayClient, IDisposable
                 mutation.Append($"add_file_to_update_{update.i}: add_file_to_update(update_id: $updateId{update.i}, file: ${variableName}) {RESPONSE_PARAMS}");
 
                 // Add ByteArrayContent to the dictionary
-                multipartFormDataContent.Add(update.value.FileUpload.ByteArrayContent, $"variables[{variableName}]", update.value.FileUpload.FileName);
+                multipartFormDataContent.Add(update.value.FileUpload.StreamContent, $"variables[{variableName}]", update.value.FileUpload.FileName);
 
                 // Add the update id to the dictionary
                 multipartFormDataContent.Add(new StringContent(update.value.Id.GetValueOrDefault().ToString()), $"variables[updateId{update.i}]");
@@ -805,6 +811,149 @@ public partial class MondayClient : IMondayClient, IDisposable
                 }
             }
 
+            return response;
+        }
+        else
+        {
+            // Create the response
+            Application.MondayResponse<Dictionary<string, Asset>> response = new()
+            {
+                IsSuccessful = false
+            };
+
+            // Check if the response has errors
+            if (jsonDocument.RootElement.TryGetProperty("errors", out JsonElement errors))
+            {
+                // Return the errors
+                response.Errors = errors
+                    .EnumerateArray()
+                    .Select(x => x.GetProperty("message").GetString())
+                    .ToHashSet()!;
+            }
+            else if (jsonDocument.RootElement.TryGetProperty("error_message", out JsonElement errorMessage))
+            {
+                // Return the errors
+                response.Errors = [errorMessage.GetString()!];
+            }
+            else
+            {
+                // Return the errors
+                response.Errors = [rawResponse];
+            }
+
+            return response;
+        }
+    }
+
+    public async Task<Application.MondayResponse<Dictionary<string, Asset>>> UploadFileToColumnAsync(
+        Item[] items, CancellationToken cancellationToken = default)
+    {
+        // If The GraphQL Client Is Null, Return Null.
+        if (this._graphQLHttpClient == null)
+        {
+            return new Application.MondayResponse<Dictionary<string, Asset>>()
+            {
+                IsSuccessful = false,
+                Errors = ["GraphQL Client Is Null."]
+            };
+        }
+
+        // Create The Response Parameters.
+        const string RESPONSE_PARAMS = @$"{{id}}";
+
+        // Create parameters for the query
+        StringBuilder parameters = new();
+
+        // Create the mutation
+        StringBuilder mutation = new();
+
+        // Create a dictionary to store variables dynamically
+        using MultipartFormDataContent multipartFormDataContent = [];
+
+        // Append the parameters
+        foreach (var item in items.Select((value, i) => new { i, value }))
+        {
+            // Check if there is an item name.
+            if (item.value.Id == 0)
+            {
+                return new Application.MondayResponse<Dictionary<string, Asset>>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["Item Id Is Null."]
+                };
+            }
+
+            // Check if there is a file upload
+            if (item.value.FileUpload is null)
+            {
+                return new Application.MondayResponse<Dictionary<string, Asset>>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["File Upload Is Null."]
+                };
+            }
+
+            // Generate a unique variable name based on the item index
+            string variableName = $"file{item.i}";
+
+            // Check if the column values are null
+            if (item.value.FileUpload?.StreamContent is not null && item.value.FileUpload.FileName is not null)
+            {
+                // Append the parameters
+                parameters.Append($"${variableName}: File!, $itemId{item.i}: ID!,");
+
+                // Append the mutation
+                mutation.Append($"add_file_to_column_{item.i}: add_file_to_column(item_id: $itemId{item.i}, column_id: \"{item.value.FileUpload.ColumnId}\", file: ${variableName}) {RESPONSE_PARAMS}");
+
+                // Add ByteArrayContent to the dictionary
+                multipartFormDataContent.Add(item.value.FileUpload.StreamContent, $"variables[{variableName}]", item.value.FileUpload.FileName);
+
+                // Add the update id to the dictionary
+                multipartFormDataContent.Add(new StringContent(item.value.Id.ToString()), $"variables[itemId{item.i}]");
+            }      
+        }
+
+        // Create the query
+        string query = $"mutation ({parameters}){{{mutation}}}";
+
+        // Add the query to the dictionary
+        multipartFormDataContent.Add(new StringContent(query), "query");
+
+        // Execute The Query.
+        using HttpResponseMessage httpResponseMessage = await _graphQLHttpClient.HttpClient.PostAsync(
+            $"{this._mondayOptions!.EndPoint}/file", multipartFormDataContent, cancellationToken);
+
+        // Read the response
+        string rawResponse = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+        // Parse the response
+        using JsonDocument jsonDocument = JsonDocument.Parse(rawResponse);
+
+        // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
+        if (httpResponseMessage.IsSuccessStatusCode && jsonDocument.RootElement.TryGetProperty("data", out JsonElement data))
+        {
+            Application.MondayResponse<Dictionary<string, Asset>> response = new()
+            {
+                IsSuccessful = true,
+                Data = []
+            };
+
+            // Loop through each property
+            foreach (JsonProperty property in data.EnumerateObject())
+            {
+                // Check if the property is an object
+                if (property.Value.ValueKind == JsonValueKind.Object)
+                {
+                    // Converstion was created with the Newtonsoft
+                    Asset? asset = Newtonsoft.Json.JsonConvert.DeserializeObject<Asset>(property.Value.GetRawText());
+
+                    // Check if the asset is not null
+                    if (asset is not null)
+                    {
+                        response.Data?.Add(property.Name, asset);
+                    }
+                }
+            }
             return response;
         }
         else

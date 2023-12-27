@@ -31,6 +31,9 @@ public record Item
     [JsonProperty("updates")]
     public List<Update> Updates { get; set; }
 
+    [JsonIgnore]
+    public FileUpload? FileUpload { get; set; }
+
     public Item()
     {
         this.ColumnValues = [];
