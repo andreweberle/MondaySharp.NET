@@ -67,7 +67,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _mondayOptions.Token);
 
         // Set The API Version.
-        _graphQLHttpClient.HttpClient.DefaultRequestHeaders.Add("API-Version", "2023-10");
+        _graphQLHttpClient.HttpClient.DefaultRequestHeaders.Add("API-Version", _mondayOptions.Version);
 
         // Set The Logger.
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));

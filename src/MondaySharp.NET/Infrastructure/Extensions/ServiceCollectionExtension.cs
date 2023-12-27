@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using MondaySharp.NET.Application.Interfaces;
 using MondaySharp.NET.Domain.Common;
 using MondaySharp.NET.Infrastructure.Persistence;
@@ -16,17 +15,14 @@ public static class ServiceCollectionExtension
     /// <returns></returns>
     public static IServiceCollection TryAddMondayClient(this IServiceCollection services, Action<MondayOptions> options)
     {
-        // Create New Monday Options.
-        MondayOptions mondayOptions = new();
-
-        // Invoke Delegate That Will Assign The Options To The Monday Options.
-        options.Invoke(mondayOptions);
-
-        // Add Monday Options To The Service Collection.
-        services.TryAddSingleton(mondayOptions);
+        // Add Logging To The Service Collection.
+        services.AddLogging();
 
         // Add Monday Client To The Service Collection.
-        services.TryAddSingleton<IMondayClient, MondayClient>();
+        services.AddSingleton<IMondayClient, MondayClient>(sp =>
+        {
+            return new MondayClient(sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MondayClient>>(), options);
+        });
 
         // Return The Service Collection.
         return services;

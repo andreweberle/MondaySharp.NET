@@ -1,9 +1,12 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MondaySharp.NET.Application.Attributes;
 using MondaySharp.NET.Application.Entities;
+using MondaySharp.NET.Application.Interfaces;
 using MondaySharp.NET.Domain.ColumnTypes;
 using MondaySharp.NET.Domain.Common;
+using MondaySharp.NET.Infrastructure.Extensions;
 using MondaySharp.NET.Infrastructure.Persistence;
 using MondaySharp.NET.Infrastructure.Utilities;
 using System.Text.Json;
@@ -13,8 +16,10 @@ namespace MondaySharp.Functional.Tests;
 [TestClass]
 public class UnitTest1
 {
-    MondayClient? MondayClient { get; set; }
-    ILogger<MondayClient>? Logger { get; set; }
+    IMondayClient? MondayClient { get; set; }
+    IConfiguration? Configuration { get; set; } = null!;
+    IServiceProvider? ServiceProvider { get; set; } = null!;
+    IServiceCollection? Services { get; set; } = null!;
 
     ulong BoardId { get; set; }
 
@@ -22,18 +27,24 @@ public class UnitTest1
     public void Init()
     {
         // Load appsettings.json
-        IConfigurationRoot configuration = new ConfigurationBuilder()
+        this.Configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
 
-        this.Logger = new LoggerFactory().CreateLogger<MondayClient>();
-        MondayClient = new MondayClient(this.Logger, options =>
+        this.BoardId = ulong.Parse(Configuration["boardId"]!);
+
+        // Create service collection
+        this.Services = new ServiceCollection();
+        this.Services.AddLogging();
+        this.Services.TryAddMondayClient(options =>
         {
-            options.EndPoint = new System.Uri(configuration["mondayUrl"]!);
-            options.Token = configuration["mondayToken"]!;
+            options.EndPoint = new System.Uri(Configuration["mondayUrl"]!);
+            options.Token = Configuration["mondayToken"]!;
         });
 
-        this.BoardId = ulong.Parse(configuration["boardId"]!);
+        // Build service provider
+        this.ServiceProvider = this.Services.BuildServiceProvider();
+        this.MondayClient = this.ServiceProvider.GetRequiredService<IMondayClient>();
     }
 
     [TestMethod]
