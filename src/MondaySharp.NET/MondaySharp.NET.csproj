@@ -10,7 +10,7 @@
 		<PackageDescription>This package contains a Monday.com client</PackageDescription>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<Deterministic>False</Deterministic>
-		<Version>1.0.10</Version>
+		<Version>1.0.11</Version>
 		<PackageProjectUrl>https://github.com/andreweberle/MondaySharp.NET/</PackageProjectUrl>
 	</PropertyGroup>
 
