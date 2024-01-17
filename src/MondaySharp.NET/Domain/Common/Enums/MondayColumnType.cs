@@ -19,7 +19,7 @@ public enum MondayColumnType
     Hour,
     Item_Assignees,
     Item_Id,
-    LastUpdated,
+    Last_Updated,
     Link,
     Location,
     Long_Text,
