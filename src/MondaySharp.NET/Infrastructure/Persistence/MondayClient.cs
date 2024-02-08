@@ -2,12 +2,14 @@
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.Newtonsoft;
 using Microsoft.Extensions.Logging;
+using MondaySharp.NET.Application;
 using MondaySharp.NET.Application.Common;
 using MondaySharp.NET.Application.Entities;
 using MondaySharp.NET.Application.Interfaces;
 using MondaySharp.NET.Domain.ColumnTypes;
 using MondaySharp.NET.Domain.Common;
 using MondaySharp.NET.Infrastructure.Utilities;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Reflection;
@@ -15,6 +17,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MondaySharp.NET.Infrastructure.Persistence;
@@ -991,5 +994,113 @@ public partial class MondayClient : IMondayClient, IDisposable
 
             return response;
         }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="itemId"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public async Task<MondayResponse<T>> GetBoardItemAsync<T>(ulong itemId) where T : MondayRow, new()
+    {
+        // If The GraphQL Client Is Null, Return Null.
+        if (this._graphQLHttpClient == null)
+        {
+            return new MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["GraphQL Client Is Null."]
+            };
+        }
+
+        // Create New Instance Of T Type.
+        T instance = Activator.CreateInstance<T>();
+
+        // Check for multiple properties of the same type
+        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilties.UnsupportedTypes)
+        {
+            int count = instance.GetType().GetProperties().Count(propertyInfo => propertyInfo.PropertyType == unSupportedType.Key);
+            if (count > 1) throw new NotImplementedException(unSupportedType.Value);
+        }
+
+        // Create New
+        StringBuilder stringBuilder = new();
+
+        // Get each property in instance.
+        foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
+        {
+            // Attempt to get the type from the GetItemsQueryBuilder
+            if (MondayUtilties.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
+            {
+                // Append the query to the string builder.
+                stringBuilder.Append(query);
+            }
+        }
+
+        // Construct the GraphQL query
+        GraphQLRequest keyValuePairs = new()
+        {
+            Query = $@"query($itemId: [ID!]) {{
+                 items(ids: $itemId) {{
+                    id
+                    name
+                    state
+                    column_values {{
+                        id
+                        text
+                        type
+                        value
+                    }}
+                    {stringBuilder}
+                 }}
+            }}",
+            Variables = new
+            {
+                itemId
+            }
+        };
+
+        // Execute The Query.
+        GraphQLResponse<ItemsPageByColumnValue> graphQLResponse = await this._graphQLHttpClient.SendQueryAsync<ItemsPageByColumnValue>(keyValuePairs);
+
+        // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
+        if (graphQLResponse.Errors is null && graphQLResponse.Data?.Items?.Count > 0)
+        {
+            // Get The Column Property Map.
+            Dictionary<string, string> columnPropertyMap = MondayUtilties.GetColumnPropertyMap<T>();
+
+            // Loop through each item
+            foreach (Item item in graphQLResponse.Data.Items)
+            {
+                // Create New Instance Of T Type.
+                T dataInstance = Activator.CreateInstance<T>();
+
+                // Attempt To Bind The Items.
+                if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item, ref dataInstance))
+                {
+                    return new MondayResponse<T>()
+                    {
+                        IsSuccessful = true,
+                        Data = dataInstance
+                    };
+                }
+            }
+        }
+        else if (graphQLResponse.Errors is not null)
+        {
+            return new MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+            };
+        }
+
+        return new MondayResponse<T>()
+        {
+            IsSuccessful = false,
+            Errors = []
+        };
     }
 }

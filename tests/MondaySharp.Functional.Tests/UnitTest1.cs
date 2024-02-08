@@ -166,6 +166,16 @@ public class UnitTest1
     }
 
     [TestMethod]
+    public async Task GetItemById_Should_Be_Ok()
+    {
+        // Act
+        NET.Application.MondayResponse<TestRow> item = await this.MondayClient!.GetBoardItemAsync<TestRow>(3641816676);
+
+        // Assert
+        Assert.IsTrue(item.Data != null);
+    }
+
+    [TestMethod]
     public void ConvertColumnValuesToJson_Should_Be_Ok()
     {
         // Arrange
