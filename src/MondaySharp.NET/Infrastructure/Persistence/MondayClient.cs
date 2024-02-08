@@ -190,19 +190,21 @@ public partial class MondayClient : IMondayClient, IDisposable
             // Get The Column Property Map.
             Dictionary<string, string> columnPropertyMap = MondayUtilties.GetColumnPropertyMap<T>();
 
+            // Loop through each item
             foreach (Item item in graphQLResponse.Data.ItemsPageByColumnValue.Items)
             {
-
                 // Check if we need to break out of the loop
                 if (cancellationToken.IsCancellationRequested) yield break;
 
+                T datanstance = Activator.CreateInstance<T>();
+
                 // Attempt To Bind The Items.
-                if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item!, ref instance))
+                if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item!, ref datanstance))
                 {               
                     yield return new Application.MondayResponse<T?>()
                     {
                         IsSuccessful = true,
-                        Data = instance
+                        Data = datanstance
                     };
                 }
             }
@@ -316,13 +318,16 @@ public partial class MondayClient : IMondayClient, IDisposable
                 // Check if we need to break out of the loop
                 if (cancellationToken.IsCancellationRequested) yield break;
 
+                // Create New Instance Of T Type.
+                T dataInstance = Activator.CreateInstance<T>();
+
                 // Attempt To Bind The Items.
-                if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item!, ref instance))
+                if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item!, ref dataInstance))
                 {
                     yield return new Application.MondayResponse<T?>()
                     {
                         IsSuccessful = true,
-                        Data = instance
+                        Data = dataInstance
                     };
                 }
             }

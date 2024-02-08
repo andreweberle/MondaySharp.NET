@@ -3,6 +3,7 @@ using MondaySharp.NET.Application.Entities;
 using MondaySharp.NET.Domain.ColumnTypes;
 using MondaySharp.NET.Domain.Common;
 using MondaySharp.NET.Domain.Common.Enums;
+using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -13,6 +14,7 @@ public static partial class MondayUtilties
 {
     [GeneratedRegexAttribute(@"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", RegexOptions.Compiled)]
     private static partial Regex UrlFromStringExtractor();
+    private static CultureInfo Culture => System.Globalization.CultureInfo.CurrentCulture;
 
     /// <summary>
     /// Extact's A Url From The Given String Type.
@@ -59,12 +61,17 @@ public static partial class MondayUtilties
         SetPropertyIfExists(destinationType, nameof(item.Assets), item.Assets, destination);
         SetPropertyIfExists(destinationType, nameof(item.Updates), item.Updates, destination);
 
-        // Loop Through All Columns.
         foreach (ColumnValue? columnValue in item.ColumnValues
             .Where(x => x.Type != Domain.Common.Enums.MondayColumnType.Subtasks))
         {
-            if (columnPropertyMap.TryGetValue(columnValue.Id, out string? propertyName) || (columnValue.Id?.Replace(" ", "") == propertyName))
+            // Perform dictionary lookup once
+            string columnId = columnValue.Id ?? string.Empty;
+            if (columnPropertyMap.TryGetValue(columnId, out string? propertyName) ||
+                columnPropertyMap.TryGetValue(char.ToUpper(columnId[0], Culture) + columnId[1..], out propertyName) ||
+                columnId.Replace(" ", "") == propertyName)
             {
+                if (string.IsNullOrEmpty(propertyName)) continue;
+
                 PropertyInfo? property = destinationType.GetProperty(propertyName);
                 property?.SetValue(destination, CreateColumnTypeInstance(columnValue.Type, columnValue));
             }
