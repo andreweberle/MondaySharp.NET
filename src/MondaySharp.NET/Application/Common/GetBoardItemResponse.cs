@@ -9,6 +9,19 @@ internal class GetBoardItemsByColumnValuesResponse
     public ItemsPageByColumnValue? ItemsPageByColumnValue { get; set; }
 }
 
+internal class NextItemsPageResponse
+{
+    [JsonProperty("next_items_page")]
+    public NextItemsPage? NextItemsPage { get; set; }
+}
+
+internal class NextItemsPage
+{
+    public string? Cursor { get; set; }
+    public List<Item>? Items { get; set; }
+    public bool ContainsMore => !string.IsNullOrEmpty(Cursor);
+}
+
 internal class GetBoardItemsResponse
 {
     [JsonProperty("boards")]

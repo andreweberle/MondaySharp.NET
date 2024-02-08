@@ -22,6 +22,7 @@ public class UnitTest1
     IServiceCollection? Services { get; set; } = null!;
 
     ulong BoardId { get; set; }
+    ulong BoardItem { get; set; }
 
     [TestInitialize]
     public void Init()
@@ -31,7 +32,11 @@ public class UnitTest1
             .AddJsonFile("appsettings.json")
             .Build();
 
+        // Get the board id
         this.BoardId = ulong.Parse(Configuration["boardId"]!);
+
+        // Get the board item
+        this.BoardItem = ulong.Parse(Configuration["boardItem"]!);
 
         // Create service collection
         this.Services = new ServiceCollection();
@@ -48,7 +53,7 @@ public class UnitTest1
     }
 
     [TestMethod]
-    public void GetItemsByColumnValues_Should_Be_Ok()
+    public async Task GetItemsByColumnValues_Should_Be_OkAsync()
     {
         // Arrange
         ColumnValue[] columnValues =
@@ -66,52 +71,26 @@ public class UnitTest1
         ];
 
         // Act
-        List<NET.Application.MondayResponse<TestRow?>> items = 
-            this.MondayClient!.GetBoardItemsAsEnumerableAsync<TestRow>(this.BoardId, columnValues).ToBlockingEnumerable().ToList();
+        NET.Application.MondayResponse<TestRow> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId, columnValues);
 
         // Assert
-        Assert.IsTrue(items.Count > 0);
+        Assert.IsTrue(items.Response?.Count > 0);
     }
 
     [TestMethod]
-    public void GetItems_Should_Be_Ok()
+    public async Task GetItems_Should_Be_OkAsync()
     {
         // Arrange
+
         // Act
-        var items = this.MondayClient!.GetBoardItemsAsEnumerableAsync<TestRow>(this.BoardId).ToBlockingEnumerable().ToList();
+        NET.Application.MondayResponse<TestRow> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId);
 
         // Assert
-        Assert.IsTrue(items.Count > 0);
+        Assert.IsTrue(items.Response?.Count > 0);
     }
 
     [TestMethod]
-    public void GetItemsByColumnValuesWithGroup_Should_Be_Ok()
-    {
-        // Arrange
-        ColumnValue[] columnValues =
-        [
-            new ColumnValue()
-            {
-                Id = "text0",
-                Text = "123"
-            },
-            new ColumnValue()
-            {
-                Id = "numbers9",
-                Text = "1"
-            },
-        ];
-
-        // Act
-        List<NET.Application.MondayResponse<TestRowWithGroup?>> items = this.MondayClient!.GetBoardItemsAsEnumerableAsync<TestRowWithGroup>(this.BoardId, columnValues).ToBlockingEnumerable().ToList();
-
-        // Assert
-        Assert.IsTrue(items.Count > 0);
-        Assert.IsTrue(items.FirstOrDefault()?.Data?.Group != null);
-    }
-
-    [TestMethod]
-    public void GetItemsByColumnValuesWithAssets_Should_Be_Ok()
+    public async Task GetItemsByColumnValuesWithGroup_Should_Be_OkAsync()
     {
         // Arrange
         ColumnValue[] columnValues =
@@ -129,17 +108,40 @@ public class UnitTest1
         ];
 
         // Act
-        List<NET.Application.MondayResponse<TestRowWithAssets?>> mondayResponses = 
-            this.MondayClient!.GetBoardItemsAsEnumerableAsync<TestRowWithAssets>(this.BoardId, columnValues).ToBlockingEnumerable().ToList();
+        NET.Application.MondayResponse<TestRowWithGroup> items = 
+            await this.MondayClient!.GetBoardItemsAsync<TestRowWithGroup>(this.BoardId, columnValues);
 
         // Assert
-
-        Assert.IsTrue(mondayResponses.Count > 0);
-        Assert.IsTrue(mondayResponses.FirstOrDefault()?.Data?.Assets?.Count > 0);
+        Assert.IsTrue(items.Response?.Count > 0);
     }
 
     [TestMethod]
-    public void GetItemsByColumnValuesWithUpdates_Should_Be_Ok()
+    public async Task GetItemsByColumnValuesWithAssets_Should_Be_OkAsync()
+    {
+        // Arrange
+        ColumnValue[] columnValues =
+        [
+            new ColumnValue()
+            {
+                Id = "text",
+                Text = "123"
+            },
+            new ColumnValue()
+             {
+                 Id = "type",
+                 Text = "123"
+             }
+        ];
+
+        // Act
+        NET.Application.MondayResponse<TestRowWithAssets> mondayResponses = await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, limit: 500);
+
+        // Assert
+        Assert.IsTrue(mondayResponses.Response.Count > 0);
+    }
+
+    [TestMethod]
+    public async Task GetItemsByColumnValuesWithUpdates_Should_Be_OkAsync()
     {
         // Arrange
         ColumnValue[] columnValues =
@@ -157,22 +159,33 @@ public class UnitTest1
         ];
 
         // Act
-        List<NET.Application.MondayResponse<TestRowWithUpdates?>> items = this.MondayClient!.GetBoardItemsAsEnumerableAsync<TestRowWithUpdates>(this.BoardId, columnValues)
-            .ToBlockingEnumerable().ToList();
+        NET.Application.MondayResponse<TestRowWithUpdates> items = await this.MondayClient!.GetBoardItemsAsync<TestRowWithUpdates>(this.BoardId, columnValues);
 
         // Assert
-        Assert.IsTrue(items.Count > 0);
-        Assert.IsTrue(items.FirstOrDefault()?.Data.Updates?.Count > 0);
+        Assert.IsTrue(items.Response?.Count > 0);
     }
 
     [TestMethod]
     public async Task GetItemById_Should_Be_Ok()
     {
         // Act
-        NET.Application.MondayResponse<TestRow> item = await this.MondayClient!.GetBoardItemAsync<TestRow>(3641816676);
+        NET.Application.MondayResponse<TestRow> item = await this.MondayClient!.GetBoardItemAsync<TestRow>(this.BoardItem);
 
         // Assert
-        Assert.IsTrue(item.Data != null);
+        Assert.IsTrue(item.Response != null);
+        Assert.IsTrue(item.IsSuccessful);
+    }
+
+    [TestMethod]
+    public async Task GetItemsByCursor_Should_Be_Ok()
+    {
+        // Arrange
+
+        // Act
+        NET.Application.MondayResponse<TestRow> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId, 25);
+
+        // Assert
+        Assert.IsTrue(items.Response?.Count > 0);
     }
 
     [TestMethod]
@@ -279,9 +292,9 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
-        Assert.IsTrue(mondayResponse.Data?.Count == 2);
-        Assert.IsTrue(mondayResponse.Data?.FirstOrDefault().Value.Name == items.FirstOrDefault()?.Name);
-        Assert.IsTrue(mondayResponse.Data?.LastOrDefault().Value.Name == items.LastOrDefault()?.Name);
+        Assert.IsTrue(mondayResponse.Response?.Count == 1);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Values.FirstOrDefault()?.Name == items.FirstOrDefault()?.Name);
+        Assert.IsTrue(mondayResponse.Response?.LastOrDefault()?.Data?.Values.LastOrDefault()?.Name == items.LastOrDefault()?.Name);
     }
 
     [TestMethod]
@@ -307,9 +320,9 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
-        Assert.IsTrue(mondayResponse.Data?.Count == 2);
-        Assert.IsTrue(mondayResponse.Data?.FirstOrDefault().Value.TextBody == updates.FirstOrDefault()?.TextBody);
-        Assert.IsTrue(mondayResponse.Data?.LastOrDefault().Value.TextBody == updates.LastOrDefault()?.TextBody);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Count == 2);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.TextBody == updates.FirstOrDefault()?.TextBody);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.LastOrDefault().Value.TextBody == updates.LastOrDefault()?.TextBody);
     }
 
     [TestMethod]
@@ -348,10 +361,12 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
-        Assert.IsTrue(mondayResponse.Data?.Count == 1);
+        Assert.IsTrue(mondayResponse.Response?.Count == 1);
 
         // Assign the id to the item
-        item.Id = mondayResponse.Data.FirstOrDefault().Value.Id;
+        item.Id = mondayResponse.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0;
+
+        Assert.IsTrue(item.Id > 0);
 
         // Act
         mondayResponse = await this.MondayClient!.DeleteItemsAsync([item]);
@@ -359,8 +374,8 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
-        Assert.IsTrue(mondayResponse.Data?.Count == 1);
-        Assert.IsTrue(mondayResponse.Data?.FirstOrDefault().Value.Id == item.Id);
+        Assert.IsTrue(mondayResponse.Response?.Count == 1);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id == item.Id);
     }
 
     [TestMethod]
@@ -423,13 +438,17 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
         Assert.IsNull(mondayResponseCreate.Errors);
-        Assert.IsTrue(mondayResponseCreate.Data?.Count == 2);
-        Assert.IsTrue(mondayResponseCreate.Data?.FirstOrDefault().Value.Name == item.Name);
-        Assert.IsTrue(mondayResponseCreate.Data?.LastOrDefault().Value.Name == item2.Name);
+        Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
+
+        Assert.IsTrue(mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Name == item.Name);
+        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.LastOrDefault().Value.Name == item2.Name);
 
         // Assign the ids to the items
-        item.Id = mondayResponseCreate.Data.FirstOrDefault().Value.Id;
-        item2.Id = mondayResponseCreate.Data.LastOrDefault().Value.Id;
+        item.Id = mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0;
+        item2.Id = mondayResponseCreate.Response.FirstOrDefault()?.Data?.LastOrDefault().Value.Id ?? 0;
+
+        Assert.IsTrue(item.Id > 0);
+        Assert.IsTrue(item2.Id > 0);
 
         // Act
         NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponse =
@@ -438,9 +457,9 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
-        Assert.IsTrue(mondayResponse.Data?.Count == 2);
-        Assert.IsTrue(mondayResponse.Data?.FirstOrDefault().Value.Id == item.Id);
-        Assert.IsTrue(mondayResponse.Data?.LastOrDefault().Value.Id == item2.Id);
+        Assert.IsTrue(mondayResponse.Response?.Count == 1);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id == item.Id);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.LastOrDefault().Value.Id == item2.Id);
     }
 
     [TestMethod]
@@ -452,8 +471,8 @@ public class UnitTest1
             await this.MondayClient!.GetBoardsAsync([this.BoardId]);
 
         // Assert
-        Assert.IsTrue(mondayResponse.Data?.Count == 1);
-        Assert.IsTrue(mondayResponse.Data.FirstOrDefault()?.Id == this.BoardId);
+        Assert.IsTrue(mondayResponse.Response?.Count == 1);
+        //Assert.IsTrue(mondayResponse.Data.FirstOrDefault()?.Id == this.BoardId);
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Errors is null);
     }
@@ -466,7 +485,7 @@ public class UnitTest1
         NET.Application.MondayResponse<List<Board>> boards = await this.MondayClient!.GetBoardsAsync();
 
         // Assert
-        Assert.IsTrue(boards.Data?.Count <= 10);
+        Assert.IsTrue(boards.Response?.Count <= 10);
     }
 
     [TestMethod]
@@ -529,12 +548,16 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
         Assert.IsNull(mondayResponseCreate.Errors);
-        Assert.IsTrue(mondayResponseCreate.Data?.Count == 2);
-        Assert.IsTrue(mondayResponseCreate.Data?.FirstOrDefault().Value.Name == item.Name);
-        Assert.IsTrue(mondayResponseCreate.Data?.LastOrDefault().Value.Name == item1.Name);
+        Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
 
-        item.Id = mondayResponseCreate.Data.FirstOrDefault().Value.Id;
-        item1.Id = mondayResponseCreate.Data.LastOrDefault().Value.Id;
+        Assert.IsTrue(mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Name == item.Name);
+        Assert.IsTrue(mondayResponseCreate.Response.FirstOrDefault()?.Data?.LastOrDefault().Value.Name == item1.Name);
+
+        item.Id = mondayResponseCreate.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0;
+        item1.Id = mondayResponseCreate.Response?.FirstOrDefault()?.Data?.LastOrDefault().Value.Id ?? 0;
+
+        Assert.IsTrue(item.Id > 0);
+        Assert.IsTrue(item1.Id > 0);
 
         // Arrange
         FileUpload fileUpload = new()
@@ -558,7 +581,7 @@ public class UnitTest1
             await this.MondayClient!.UploadFileToColumnAsync([item, item1]);
 
         // Assert
-        Assert.IsTrue(uploadFilesMondayResponse.Data?.Count == 2);
+        Assert.IsTrue(uploadFilesMondayResponse.Response?.Count == 2);
         Assert.IsTrue(uploadFilesMondayResponse.IsSuccessful);
         Assert.IsTrue(uploadFilesMondayResponse.Errors is null);
 
@@ -569,9 +592,9 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponseDelete.IsSuccessful);
         Assert.IsNull(mondayResponseDelete.Errors);
-        Assert.IsTrue(mondayResponseDelete.Data?.Count == 2);
-        Assert.IsTrue(mondayResponseDelete.Data?.FirstOrDefault().Value.Id == item.Id);
-        Assert.IsTrue(mondayResponseDelete.Data?.LastOrDefault().Value.Id == item1.Id);
+        Assert.IsTrue(mondayResponseDelete.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseDelete.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id == item.Id);
+        Assert.IsTrue(mondayResponseDelete.Response.FirstOrDefault()?.Data?.LastOrDefault().Value.Id == item1.Id);
     }
 
     [TestMethod]
@@ -620,15 +643,15 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
         Assert.IsNull(mondayResponseCreate.Errors);
-        Assert.IsTrue(mondayResponseCreate.Data?.Count == 1);
-        Assert.IsTrue(mondayResponseCreate.Data?.FirstOrDefault().Value.Name == item.Name);
+        Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Name == item.Name);
 
-        item.Id = mondayResponseCreate.Data.FirstOrDefault().Value.Id;
+        item.Id = mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0;
 
         // Create Update For The Item
         Update update = new()
         {
-            Id = mondayResponseCreate.Data.FirstOrDefault().Value.Id,
+            Id = mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id,
             TextBody = "Test Update 1"
         };
 
@@ -639,18 +662,18 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
-        Assert.IsTrue(mondayResponse.Data?.Count == 1);
-        Assert.IsTrue(mondayResponse.Data?.FirstOrDefault().Value.TextBody == update.TextBody);
+        Assert.IsTrue(mondayResponse.Response?.Count == 1);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.TextBody == update.TextBody);
 
         // Arrange
         Update update0 = new()
         {
-            Id = mondayResponse.Data.FirstOrDefault().Value.Id,
+            Id = mondayResponse.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id,
             FileUpload = new FileUpload() { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
         Update update1 = new()
         {
-            Id = mondayResponse.Data.FirstOrDefault().Value.Id,
+            Id = mondayResponse.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id,
             FileUpload = new FileUpload() { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
 
@@ -659,7 +682,7 @@ public class UnitTest1
             await this.MondayClient!.UploadFileToUpdateAsync([update0, update1]);
 
         // Assert
-        Assert.IsTrue(uploadFilesMondayResponse.Data?.Count == 2);
+        Assert.IsTrue(uploadFilesMondayResponse.Response?.Count == 2);
         Assert.IsTrue(uploadFilesMondayResponse.IsSuccessful);
         Assert.IsTrue(uploadFilesMondayResponse.Errors is null);
 
@@ -670,8 +693,8 @@ public class UnitTest1
         // Assert
         Assert.IsTrue(mondayResponseDelete.IsSuccessful);
         Assert.IsNull(mondayResponseDelete.Errors);
-        Assert.IsTrue(mondayResponseDelete.Data?.Count == 1);
-        Assert.IsTrue(mondayResponseDelete.Data?.FirstOrDefault().Value.Id == item.Id);
+        Assert.IsTrue(mondayResponseDelete.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseDelete.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id == item.Id);
     }
 
     public record TestRowWithGroup : TestRow

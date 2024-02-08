@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Reflection;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -120,12 +121,38 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public async IAsyncEnumerable<Application.MondayResponse<T?>> GetBoardItemsAsEnumerableAsync<T>(
+    public async Task<Application.MondayResponse<T>> GetBoardItemsAsync<T>(
         ulong boardId, ColumnValue[] columnValues, int limit = 25,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : MondayRow, new()
+        CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
         // If The GraphQL Client Is Null, Return Null.
-        if (this._graphQLHttpClient == null) yield break;
+        if (this._graphQLHttpClient == null)
+        {
+            return new MondayResponse<T>()
+            {
+                Errors = ["GraphQL Client Is Null."],
+            };
+        }
+
+        // If The Limit Is Greater Than 500, Return Null.
+        if (limit > 500)
+        {
+            return new Application.MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["Limit Cannot Be Greater Than 500."]
+            };
+        }
+
+        // If The Limit Is Less Than 0, Return Null.
+        if (limit < 0)
+        {
+            return new Application.MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["Limit Cannot Be Less Than 0."]
+            };
+        }
 
         // Create New Instance Of T Type.
         T instance = Activator.CreateInstance<T>();
@@ -193,35 +220,57 @@ public partial class MondayClient : IMondayClient, IDisposable
             // Get The Column Property Map.
             Dictionary<string, string> columnPropertyMap = MondayUtilties.GetColumnPropertyMap<T>();
 
+            // Create New Instance Of MondayResponse.
+            Application.MondayResponse<T> mondayResponse = new Application.MondayResponse<T>()
+            {
+                IsSuccessful = true,
+                Cursor = graphQLResponse.Data.ItemsPageByColumnValue.Cursor,
+                Response = []
+            };
+
             // Loop through each item
             foreach (Item item in graphQLResponse.Data.ItemsPageByColumnValue.Items)
             {
                 // Check if we need to break out of the loop
-                if (cancellationToken.IsCancellationRequested) yield break;
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new Application.MondayResponse<T>()
+                    {
+                        IsSuccessful = false,
+                        Errors = ["Cancellation Requested."]
+                    };
+                }
 
+                // Create New Instance Of T Type.
                 T datanstance = Activator.CreateInstance<T>();
 
                 // Attempt To Bind The Items.
                 if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item!, ref datanstance))
-                {               
-                    yield return new Application.MondayResponse<T?>()
+                {
+                    // Add the data to the response
+                    mondayResponse.Response.Add(new MondayData<T>()
                     {
-                        IsSuccessful = true,
                         Data = datanstance
-                    };
+                    });
                 }
             }
+
+            return mondayResponse;
         }
         else if (graphQLResponse.Errors is not null)
         {
-            yield return new Application.MondayResponse<T?>()
+            return new Application.MondayResponse<T>()
             {
                 IsSuccessful = false,
                 Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
             };
         }
 
-        yield break;
+        return new Application.MondayResponse<T>()
+        {
+            IsSuccessful = false,
+            Errors = []
+        };
     }
 
     /// <summary>
@@ -233,12 +282,39 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public async IAsyncEnumerable<Application.MondayResponse<T?>> GetBoardItemsAsEnumerableAsync<T>(
+    public async Task<Application.MondayResponse<T>> GetBoardItemsAsync<T>(
         ulong boardId, int limit = 25, 
-        [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : MondayRow, new()
+        CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
         // If The GraphQL Client Is Null, Return Null.
-        if (this._graphQLHttpClient == null) yield break;
+        if (this._graphQLHttpClient == null)
+        {
+            return new Application.MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["GraphQL Client Is Null."]
+            };
+        }
+
+        // If The Limit Is Greater Than 500, Return Null.
+        if (limit > 500)
+        {
+            return new Application.MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["Limit Cannot Be Greater Than 500."]
+            };
+        }
+
+        // If The Limit Is Less Than 0, Return Null.
+        if (limit < 0)
+        {
+            return new Application.MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["Limit Cannot Be Less Than 0."]
+            };
+        }
 
         // Create New Instance Of T Type.
         T instance = Activator.CreateInstance<T>();
@@ -314,12 +390,28 @@ public partial class MondayClient : IMondayClient, IDisposable
             // Get The Column Property Map.
             Dictionary<string, string> columnPropertyMap = MondayUtilties.GetColumnPropertyMap<T>();
 
+            // Create New Instance Of MondayResponse.
+            Application.MondayResponse<T>? mondayResponse = new Application.MondayResponse<T>()
+            {
+                IsSuccessful = true,
+                Cursor = graphQLResponse.Data.Boards.Select(x => x.ItemsPage!.Cursor).FirstOrDefault(),
+                Response = [],
+            };
+
+            // Loop through each item
             foreach (Item item in graphQLResponse.Data.Boards.Select(x => x.ItemsPage!)
                 .Where(x => x.Items?.Count > 0)
                 .SelectMany(x => x.Items))
             {
                 // Check if we need to break out of the loop
-                if (cancellationToken.IsCancellationRequested) yield break;
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new MondayResponse<T>()
+                    {
+                        IsSuccessful = false,
+                        Errors = ["Cancellation Requested."]
+                    };
+                }
 
                 // Create New Instance Of T Type.
                 T dataInstance = Activator.CreateInstance<T>();
@@ -327,24 +419,32 @@ public partial class MondayClient : IMondayClient, IDisposable
                 // Attempt To Bind The Items.
                 if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item!, ref dataInstance))
                 {
-                    yield return new Application.MondayResponse<T?>()
+                    // Add the data to the response
+                    mondayResponse.Response.Add(new MondayData<T>()
                     {
-                        IsSuccessful = true,
                         Data = dataInstance
-                    };
+                    });
                 }
             }
+
+            return mondayResponse;
         }
         else if (graphQLResponse.Errors is not null)
         {
-            yield return new Application.MondayResponse<T?>()
+            return new Application.MondayResponse<T>()
             {
                 IsSuccessful = false,
-                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet(),
+                Response = null
             };
         }
 
-        yield break;
+        return new Application.MondayResponse<T>()
+        {
+            IsSuccessful = false,
+            Errors = [],
+            Response = null
+        };
     }
 
     /// <summary>
@@ -439,7 +539,13 @@ public partial class MondayClient : IMondayClient, IDisposable
             return new Application.MondayResponse<Dictionary<string, Item>?>()
             {
                 IsSuccessful = true,
-                Data = graphQLResponse.Data
+                Response =
+                [
+                    new MondayData<Dictionary<string, Item>?>()
+                    {
+                        Data = graphQLResponse.Data
+                    }
+                ]
             };
         }
 
@@ -447,6 +553,170 @@ public partial class MondayClient : IMondayClient, IDisposable
         {
             IsSuccessful = false,
             Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+        };
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="cursor"></param>
+    /// <param name="limit"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public async Task<Application.MondayResponse<T>> GetBoardItemsAsync<T>(
+        string? cursor, int limit = 25, CancellationToken cancellationToken = default) where T : MondayRow, new()
+    {
+        // If The Cursor Is Null, Return Null.
+        if (cursor == null)
+        {
+            return new Application.MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["Cursor Is Null."]
+            };
+        }
+
+        // If The GraphQL Client Is Null, Return Null.
+        if (this._graphQLHttpClient == null)
+        {
+            return new Application.MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["GraphQL Client Is Null."]
+            };
+        }
+
+        // If The Limit Is Greater Than 500, Return Null.
+        if (limit > 500)
+        {
+            return new Application.MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["Limit Cannot Be Greater Than 500."]
+            };
+        }
+
+        // If The Limit Is Less Than 0, Return Null.
+        if (limit < 0)
+        {
+            return new Application.MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["Limit Cannot Be Less Than 0."]
+            };
+        }
+
+        // Create New Instance Of T Type.
+        T instance = Activator.CreateInstance<T>();
+
+        // Check for multiple properties of the same type
+        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilties.UnsupportedTypes)
+        {
+            int count = instance.GetType().GetProperties().Count(propertyInfo => propertyInfo.PropertyType == unSupportedType.Key);
+            if (count > 1) throw new NotImplementedException(unSupportedType.Value);
+        }
+
+        // Create New
+        StringBuilder stringBuilder = new();
+
+        // Get each property in instance.
+        foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
+        {
+            // Attempt to get the type from the GetItemsQueryBuilder
+            if (MondayUtilties.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
+            {
+                // Append the query to the string builder.
+                stringBuilder.Append(query);
+            }
+        }
+
+        // Construct the GraphQL query
+        GraphQLRequest keyValuePairs = new()
+        {
+            Query = $@"query($cursor: String!, $limit: Int) {{
+                next_items_page (cursor: $cursor, limit: $limit) {{
+                    cursor
+                    items {{
+                        id
+                        name
+                        state
+                        column_values {{
+                            id
+                            text
+                            type
+                            value
+                        }}
+                        {stringBuilder}
+                    }}
+                }}
+            }}",
+            Variables = new
+            {
+                cursor,
+                limit
+            }
+        };
+
+        // Execute The Query.
+        GraphQLResponse<NextItemsPageResponse> graphQLResponse = await this._graphQLHttpClient.SendQueryAsync<NextItemsPageResponse>(keyValuePairs, cancellationToken);
+
+        // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
+        if (graphQLResponse.Errors is null && graphQLResponse.Data?.NextItemsPage?.Items?.Count > 0)
+        {
+            // Get The Column Property Map.
+            Dictionary<string, string> columnPropertyMap = MondayUtilties.GetColumnPropertyMap<T>();
+
+            // Create New Instance Of MondayResponse.
+            Application.MondayResponse<T> mondayResponse = new Application.MondayResponse<T>()
+            {
+                IsSuccessful = true,
+                Cursor = graphQLResponse.Data.NextItemsPage.Cursor,
+                Response = []
+            };
+
+            // Loop through each item
+            foreach (Item item in graphQLResponse.Data.NextItemsPage.Items)
+            {
+                // Check if we need to break out of the loop
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return new Application.MondayResponse<T>()
+                    {
+                        IsSuccessful = false,
+                        Errors = ["Cancellation Requested."]
+                    };
+                }
+
+                // Create New Instance Of T Type.
+                T dataInstance = Activator.CreateInstance<T>();
+
+                // Attempt To Bind The Items.
+                if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item!, ref dataInstance))
+                {
+                    mondayResponse.Response.Add(new MondayData<T>()
+                    {
+                        Data = dataInstance
+                    });
+                }
+            }
+
+            return mondayResponse;
+        }
+        else if (graphQLResponse.Errors is not null)
+        {
+            return new Application.MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+            };
+        }
+
+        return new Application.MondayResponse<T>()
+        {
+            IsSuccessful = false,
+            Errors = []
         };
     }
 
@@ -525,7 +795,13 @@ public partial class MondayClient : IMondayClient, IDisposable
             return new Application.MondayResponse<Dictionary<string, Update>?>()
             {
                 IsSuccessful = true,
-                Data = graphQLResponse.Data
+                Response =
+                [
+                    new MondayData<Dictionary<string, Update>?>()
+                    {
+                        Data = graphQLResponse.Data
+                    }
+                ]
             };
         }
 
@@ -608,7 +884,12 @@ public partial class MondayClient : IMondayClient, IDisposable
             return new Application.MondayResponse<Dictionary<string, Item>?>()
             {
                 IsSuccessful = true,
-                Data = graphQLResponse.Data
+                Response = [
+                    new MondayData<Dictionary<string, Item>?>()
+                    {
+                        Data = graphQLResponse.Data
+                    }
+                ]
             };
         }
         else if (graphQLResponse.Errors is not null)
@@ -692,7 +973,12 @@ public partial class MondayClient : IMondayClient, IDisposable
             return new Application.MondayResponse<List<Board>>()
             {
                 IsSuccessful = true,
-                Data = graphQLResponse.Data.Boards
+                Response = [
+                    new MondayData<List<Board>>()
+                    {
+                        Data = graphQLResponse.Data.Boards
+                    }
+                ]
             };
         }
         else if (graphQLResponse.Errors is not null)
@@ -799,7 +1085,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             Application.MondayResponse<Dictionary<string, Asset>> response = new()
             {
                 IsSuccessful = true,
-                Data = []
+                Response = []
             };
 
             // Loop through each property
@@ -814,7 +1100,13 @@ public partial class MondayClient : IMondayClient, IDisposable
                     // Check if the asset is not null
                     if (asset is not null)
                     {
-                        response.Data?.Add(property.Name, asset);
+                        response.Response.Add(new MondayData<Dictionary<string, Asset>>()
+                        {
+                            Data = new Dictionary<string, Asset>()
+                            {
+                                { property.Name, asset }
+                            }  
+                        });
                     }
                 }
             }
@@ -943,7 +1235,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             Application.MondayResponse<Dictionary<string, Asset>> response = new()
             {
                 IsSuccessful = true,
-                Data = []
+                Response = []
             };
 
             // Loop through each property
@@ -958,7 +1250,14 @@ public partial class MondayClient : IMondayClient, IDisposable
                     // Check if the asset is not null
                     if (asset is not null)
                     {
-                        response.Data?.Add(property.Name, asset);
+                        // Add the asset to the response
+                        response.Response?.Add(new MondayData<Dictionary<string, Asset>>()
+                        {
+                            Data = new Dictionary<string, Asset>()
+                            {
+                                { property.Name, asset }
+                            }
+                        });
                     }
                 }
             }
@@ -1083,7 +1382,13 @@ public partial class MondayClient : IMondayClient, IDisposable
                     return new MondayResponse<T>()
                     {
                         IsSuccessful = true,
-                        Data = dataInstance
+                        Response =
+                        [
+                            new MondayData<T>()
+                            {
+                                Data = dataInstance
+                            }
+                        ]
                     };
                 }
             }
