@@ -29,6 +29,6 @@ public record ColumnEmail : ColumnBaseType
     /// <returns></returns>
     public override string ToString()
     {
-        return "\"" + this.Id + "\":{\"email\":\"" + this.Email + "\",\"text\":\"" + this.Message + "\"}";
+        return "\"" + this.Id + "\":{\"email\":\"" + this.Email + "\",\"text\":\"" + (this.Message ?? this.Email) + "\"}";
     }
 }

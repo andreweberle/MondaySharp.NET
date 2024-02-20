@@ -290,7 +290,7 @@ public class UnitTest1
                         {
                             Id = "email",
                             Email = "andreweberle@email.com.au",
-                            Message = "Hello World!"
+                            Message = "Andrew Eberle"
                         },
                     }
                 ]
