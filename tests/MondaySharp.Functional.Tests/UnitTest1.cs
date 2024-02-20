@@ -205,6 +205,7 @@ public class UnitTest1
             new ColumnLink("link", "https://www.google.com", "google!"),
             new ColumnTag("tags", "21057674,21057675"),
             new ColumnTimeline("timeline", new DateTime(2023, 11, 29), new DateTime(2023, 12, 29)),
+            new ColumnEmail("email", "andreweberle@email.com.au", "hello world!")
         ];
 
         // Act
@@ -214,7 +215,7 @@ public class UnitTest1
         Assert.IsTrue(!string.IsNullOrWhiteSpace(json));
         JsonDocument jsonDocument = JsonDocument.Parse(json);
 
-        Assert.IsTrue(jsonDocument.RootElement.EnumerateObject().Count() == 11);
+        Assert.IsTrue(jsonDocument.RootElement.EnumerateObject().Count() == 12);
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("date").GetProperty("date").GetString() == "2023-11-29");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("text0").GetString() == "Andrew Eberle");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("numbers").GetString() == "10");
@@ -228,6 +229,8 @@ public class UnitTest1
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("tags").GetProperty("tag_ids").EnumerateArray().Count() == 2);
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("timeline").GetProperty("from").GetString() == "2023-11-29");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("timeline").GetProperty("to").GetString() == "2023-12-29");
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("email").GetString() == "andreweberle@email.com.au");
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("text").GetString() == "hello world!");
     }
 
     [TestMethod]
@@ -281,6 +284,15 @@ public class UnitTest1
                             Number = 11
                         },
                     },
+                    new ColumnValue() 
+                    {
+                        ColumnBaseType = new ColumnEmail()
+                        {
+                            Id = "email",
+                            Email = "andreweberle@email.com.au",
+                            Message = "Hello World!"
+                        },
+                    }
                 ]
             }
         ];
@@ -749,5 +761,8 @@ public class UnitTest1
 
         [MondayColumnHeader("tags")]
         public ColumnTag? Tags { get; set; }
+
+        [MondayColumnHeader("email")]
+        public ColumnEmail? Email { get; set; }
     }
 }
