@@ -221,6 +221,17 @@ public static partial class MondayUtilties
             case MondayColumnType.File:
                 return new ColumnFile(column.Id, !string.IsNullOrEmpty(column.Text) ? column.Text : null);
 
+            case MondayColumnType.Email:
+                if (!string.IsNullOrEmpty(column.Text))
+                {
+                    string[] parts = column.Text.Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                    return new ColumnEmail(column.Id, parts.LastOrDefault(), parts.FirstOrDefault());
+                }
+                else
+                {
+                    return new ColumnEmail(column.Id, null, null);
+                }
+
             default:
                 throw new ArgumentException($"Unsupported column type: {columnType}");
         }
