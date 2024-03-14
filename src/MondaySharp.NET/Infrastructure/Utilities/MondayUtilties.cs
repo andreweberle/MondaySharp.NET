@@ -154,7 +154,7 @@ public static partial class MondayUtilties
             case MondayColumnType.Date:
                 return new ColumnDateTime(column.Id, !string.IsNullOrEmpty(column.Text) ? Convert.ToDateTime(column.Text) : null);
 
-            case  MondayColumnType.Checkbox:
+            case MondayColumnType.Checkbox:
                 return new ColumnCheckBox(column.Id, !string.IsNullOrEmpty(column.Text) && column.Text == "v");
 
             case MondayColumnType.Status:
@@ -230,6 +230,29 @@ public static partial class MondayUtilties
                 else
                 {
                     return new ColumnEmail(column.Id, null, null);
+                }
+
+            case MondayColumnType.Rating:
+                {
+                    int parseResult = 0;
+                    if (int.TryParse(column.Text, out parseResult)) //try parsing the column text
+                    {
+                        if (parseResult < 0 || parseResult > 5) throw new ArgumentException("The rating must be between 0 and 5!"); //if its not between 0 and 5 throw an exception
+
+                        Rating? rating = parseResult switch //parse it to Rating enum
+                        {
+                            0 => Rating.None,
+                            1 => Rating.One,
+                            2 => Rating.Two,
+                            3 => Rating.Three,
+                            4 => Rating.Four,
+                            5 => Rating.Five,
+                            _ => Rating.None
+                        };
+
+                        return new ColumnRating(column.Id, rating);
+                    }
+                    else throw new ArgumentException("The text in the rating column type must be an integer!");
                 }
 
             default:
