@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace MondaySharp.NET.Infrastructure.Utilities;
 
-public static partial class MondayUtilties
+public static partial class MondayUtilities
 {
     [GeneratedRegexAttribute(@"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", RegexOptions.Compiled)]
     private static partial Regex UrlFromStringExtractor();
@@ -154,7 +154,7 @@ public static partial class MondayUtilties
             case MondayColumnType.Date:
                 return new ColumnDateTime(column.Id, !string.IsNullOrEmpty(column.Text) ? Convert.ToDateTime(column.Text) : null);
 
-            case  MondayColumnType.Checkbox:
+            case MondayColumnType.Checkbox:
                 return new ColumnCheckBox(column.Id, !string.IsNullOrEmpty(column.Text) && column.Text == "v");
 
             case MondayColumnType.Status:
@@ -231,6 +231,26 @@ public static partial class MondayUtilties
                 {
                     return new ColumnEmail(column.Id, null, null);
                 }
+
+            case MondayColumnType.Rating:
+
+                // If The Column Text Is Null Or Empty, Return A Column Rating With A None Rating.
+                if (string.IsNullOrEmpty(column.Text))
+                {
+                    return new ColumnRating(column.Id, MondayRating.None);
+                }
+
+                // If The Column Text Is Not An Integer, Or The Parse Result Is Less Than 0 Or Greater Than 5, Throw An Exception.
+                if (!int.TryParse(column.Text, out int parseResult) || parseResult < 0 || parseResult > 5)
+                {
+                    throw new ArgumentException("The rating must be an integer between 0 and 5!");
+                }
+
+                // Parse it to Rating enum
+                MondayRating rating = (MondayRating)parseResult;
+
+                // Return the Column Rating.
+                return new ColumnRating(column.Id, rating);
 
             default:
                 throw new ArgumentException($"Unsupported column type: {columnType}");

@@ -6,6 +6,7 @@ using MondaySharp.NET.Application.Entities;
 using MondaySharp.NET.Application.Interfaces;
 using MondaySharp.NET.Domain.ColumnTypes;
 using MondaySharp.NET.Domain.Common;
+using MondaySharp.NET.Domain.Common.Enums;
 using MondaySharp.NET.Infrastructure.Extensions;
 using MondaySharp.NET.Infrastructure.Persistence;
 using MondaySharp.NET.Infrastructure.Utilities;
@@ -22,7 +23,6 @@ public class UnitTest1
     IServiceCollection? Services { get; set; } = null!;
 
     ulong BoardId { get; set; }
-    ulong BoardItem { get; set; }
 
     [TestInitialize]
     public void Init()
@@ -34,9 +34,6 @@ public class UnitTest1
 
         // Get the board id
         this.BoardId = ulong.Parse(Configuration["boardId"]!);
-
-        // Get the board item
-        this.BoardItem = ulong.Parse(Configuration["boardItem"]!);
 
         // Create service collection
         this.Services = new ServiceCollection();
@@ -61,12 +58,12 @@ public class UnitTest1
             new ColumnValue()
             {
                 Id = "text0",
-                Text = "123"
+                Text = "Andrew Eberle"
             },
             new ColumnValue()
             {
                 Id = "numbers9",
-                Text = "1"
+                Text = "10"
             },
         ];
 
@@ -98,12 +95,12 @@ public class UnitTest1
             new ColumnValue()
             {
                 Id = "text0",
-                Text = "123"
+                Text = "Andrew Eberle"
             },
             new ColumnValue()
             {
                 Id = "numbers9",
-                Text = "1"
+                Text = "10"
             },
         ];
 
@@ -123,21 +120,16 @@ public class UnitTest1
         [
             new ColumnValue()
             {
-                Id = "text",
-                Text = "123"
+                Id = "text0",
+                Text = "Andrew Eberle"
             },
-            new ColumnValue()
-             {
-                 Id = "type",
-                 Text = "123"
-             }
         ];
 
         // Act
         NET.Application.MondayResponse<TestRowWithAssets> mondayResponses = await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, limit: 500);
 
         // Assert
-        Assert.IsTrue(mondayResponses.Response.Count > 0);
+        Assert.IsTrue(mondayResponses.Response?.Count > 0);
     }
 
     [TestMethod]
@@ -149,12 +141,12 @@ public class UnitTest1
             new ColumnValue()
             {
                 Id = "text0",
-                Text = "123"
+                Text = "Andrew Eberle"
             },
             new ColumnValue()
             {
                 Id = "numbers9",
-                Text = "1"
+                Text = "10"
             },
         ];
 
@@ -169,7 +161,54 @@ public class UnitTest1
     public async Task GetItemById_Should_Be_Ok()
     {
         // Act
-        NET.Application.MondayResponse<TestRow> item = await this.MondayClient!.GetBoardItemAsync<TestRow>(this.BoardItem);
+        // Create New Item.
+        Item newItem = new()
+        {
+            Name = "Test Item 1",
+            Group = new Group() { Id = "new_group53864" },
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text0",
+                        Text = "Andrew Eberle"
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnNumber()
+                    {
+                        Id = "numbers9",
+                        Number = 10
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnRating()
+                    {
+                        Id = "rating",
+                        Rating = MondayRating.Five
+                    }
+                }
+            ]
+        };
+
+        // Create the item
+        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseCreate = 
+            await this.MondayClient!.CreateBoardItemsAsync(BoardId, [newItem]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseCreate.IsSuccessful);
+        Assert.IsNull(mondayResponseCreate.Errors);
+        Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Name == newItem.Name);
+
+        // Assign the id to the item
+        ulong boardItemId = mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0;
+
+        NET.Application.MondayResponse<TestRow> item = await this.MondayClient!.GetBoardItemAsync<TestRow>(boardItemId);
 
         // Assert
         Assert.IsTrue(item.Response != null);
@@ -205,17 +244,18 @@ public class UnitTest1
             new ColumnLink("link", "https://www.google.com", "google!"),
             new ColumnTag("tags", "21057674,21057675"),
             new ColumnTimeline("timeline", new DateTime(2023, 11, 29), new DateTime(2023, 12, 29)),
-            new ColumnEmail("email", "andreweberle@email.com.au", "hello world!")
+            new ColumnEmail("email", "andreweberle@email.com.au", "hello world!"),
+            new ColumnRating("rating", null)
         ];
 
         // Act
-        string json = MondayUtilties.ToColumnValuesJson(columnValues);
+        string json = MondayUtilities.ToColumnValuesJson(columnValues);
 
         // Assert
         Assert.IsTrue(!string.IsNullOrWhiteSpace(json));
         JsonDocument jsonDocument = JsonDocument.Parse(json);
 
-        Assert.IsTrue(jsonDocument.RootElement.EnumerateObject().Count() == 12);
+        Assert.IsTrue(jsonDocument.RootElement.EnumerateObject().Count() == columnValues.Count);
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("date").GetProperty("date").GetString() == "2023-11-29");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("text0").GetString() == "Andrew Eberle");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("numbers").GetString() == "10");
@@ -231,6 +271,7 @@ public class UnitTest1
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("timeline").GetProperty("to").GetString() == "2023-12-29");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("email").GetString() == "andreweberle@email.com.au");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("text").GetString() == "hello world!");
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("rating").GetProperty("rating").GetInt32() == 5);
     }
 
     [TestMethod]
@@ -260,6 +301,14 @@ public class UnitTest1
                             Number = 10
                         },
                     },
+                    new ColumnValue()
+                    {
+                        ColumnBaseType = new ColumnRating()
+                        {
+                            Id = "rating",
+                            Rating = MondayRating.Two
+                        }
+                    }
                 ]
             },
             new Item()
@@ -292,6 +341,14 @@ public class UnitTest1
                             Email = "andreweberle@email.com.au",
                             Message = "Andrew Eberle"
                         },
+                    },
+                    new ColumnValue()
+                    {
+                        ColumnBaseType = new ColumnRating()
+                        {
+                            Id = "rating",
+                            Rating = MondayRating.Five
+                        }
                     }
                 ]
             }
@@ -709,6 +766,19 @@ public class UnitTest1
         Assert.IsTrue(mondayResponseDelete.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id == item.Id);
     }
 
+    [TestMethod]
+    public async Task Cleanup()
+    {
+        // Get All Items
+        NET.Application.MondayResponse<TestRow> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId);
+
+        // Delete All Items
+        await this.MondayClient!.DeleteItemsAsync([.. items.Response.Select(x => new Item()
+        {
+            Id = x.Data!.Id
+        })]);
+    }
+
     public record TestRowWithGroup : TestRow
     {
         public Group? Group { get; set; }
@@ -764,5 +834,8 @@ public class UnitTest1
 
         [MondayColumnHeader("email")]
         public ColumnEmail? Email { get; set; }
+
+        [MondayColumnHeader("rating")]
+        public ColumnRating? Rating { get; set; }
     }
 }
