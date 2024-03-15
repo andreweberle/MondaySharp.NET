@@ -158,7 +158,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         T instance = Activator.CreateInstance<T>();
 
         // Check for multiple properties of the same type
-        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilties.UnsupportedTypes)
+        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilities.UnsupportedTypes)
         {
             int count = instance.GetType().GetProperties().Count(propertyInfo => propertyInfo.PropertyType == unSupportedType.Key);
             if (count > 1) throw new NotImplementedException(unSupportedType.Value);
@@ -171,7 +171,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
         {
             // Attempt to get the type from the GetItemsQueryBuilder
-            if (MondayUtilties.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
+            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
             {
                 // Append the query to the string builder.
                 stringBuilder.Append(query);
@@ -218,7 +218,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         if (graphQLResponse.Errors is null && graphQLResponse.Data?.ItemsPageByColumnValue?.Items?.Count > 0)
         {
             // Get The Column Property Map.
-            Dictionary<string, string> columnPropertyMap = MondayUtilties.GetColumnPropertyMap<T>();
+            Dictionary<string, string> columnPropertyMap = MondayUtilities.GetColumnPropertyMap<T>();
 
             // Create New Instance Of MondayResponse.
             Application.MondayResponse<T> mondayResponse = new Application.MondayResponse<T>()
@@ -245,7 +245,7 @@ public partial class MondayClient : IMondayClient, IDisposable
                 T datanstance = Activator.CreateInstance<T>();
 
                 // Attempt To Bind The Items.
-                if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item!, ref datanstance))
+                if (MondayUtilities.TryBindColumnDataAsync(columnPropertyMap!, item!, ref datanstance))
                 {
                     // Add the data to the response
                     mondayResponse.Response.Add(new MondayData<T>()
@@ -320,7 +320,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         T instance = Activator.CreateInstance<T>();
 
         // Check for multiple properties of the same type
-        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilties.UnsupportedTypes)
+        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilities.UnsupportedTypes)
         {
             int count = instance.GetType().GetProperties().Count(propertyInfo => propertyInfo.PropertyType == unSupportedType.Key);
             if (count > 1) throw new NotImplementedException(unSupportedType.Value);
@@ -333,7 +333,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
         {
             // Attempt to get the type from the GetItemsQueryBuilder
-            if (MondayUtilties.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
+            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
             {
                 // Append the query to the string builder.
                 stringBuilder.Append(query);
@@ -388,7 +388,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             && graphQLResponse.Data?.Boards?.Any(x => x.ItemsCount > 0) == true)
         {
             // Get The Column Property Map.
-            Dictionary<string, string> columnPropertyMap = MondayUtilties.GetColumnPropertyMap<T>();
+            Dictionary<string, string> columnPropertyMap = MondayUtilities.GetColumnPropertyMap<T>();
 
             // Create New Instance Of MondayResponse.
             Application.MondayResponse<T>? mondayResponse = new Application.MondayResponse<T>()
@@ -417,7 +417,7 @@ public partial class MondayClient : IMondayClient, IDisposable
                 T dataInstance = Activator.CreateInstance<T>();
 
                 // Attempt To Bind The Items.
-                if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item!, ref dataInstance))
+                if (MondayUtilities.TryBindColumnDataAsync(columnPropertyMap!, item!, ref dataInstance))
                 {
                     // Add the data to the response
                     mondayResponse.Response.Add(new MondayData<T>()
@@ -498,7 +498,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             if (item.value.ColumnValues is not null && item.value.ColumnValues is { Count: > 0})
             {
                 // Add the variable to the dictionary
-                variables.Add(variableName, MondayUtilties.ToColumnValuesJson(item.value.ColumnValues.Select(x => x.ColumnBaseType).ToList()!));
+                variables.Add(variableName, MondayUtilities.ToColumnValuesJson(item.value.ColumnValues.Select(x => x.ColumnBaseType).ToList()!));
 
                 // Append the parameters
                 parameters.Append($"${variableName}: JSON,");
@@ -612,7 +612,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         T instance = Activator.CreateInstance<T>();
 
         // Check for multiple properties of the same type
-        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilties.UnsupportedTypes)
+        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilities.UnsupportedTypes)
         {
             int count = instance.GetType().GetProperties().Count(propertyInfo => propertyInfo.PropertyType == unSupportedType.Key);
             if (count > 1) throw new NotImplementedException(unSupportedType.Value);
@@ -625,7 +625,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
         {
             // Attempt to get the type from the GetItemsQueryBuilder
-            if (MondayUtilties.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
+            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
             {
                 // Append the query to the string builder.
                 stringBuilder.Append(query);
@@ -666,7 +666,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         if (graphQLResponse.Errors is null && graphQLResponse.Data?.NextItemsPage?.Items?.Count > 0)
         {
             // Get The Column Property Map.
-            Dictionary<string, string> columnPropertyMap = MondayUtilties.GetColumnPropertyMap<T>();
+            Dictionary<string, string> columnPropertyMap = MondayUtilities.GetColumnPropertyMap<T>();
 
             // Create New Instance Of MondayResponse.
             Application.MondayResponse<T> mondayResponse = new Application.MondayResponse<T>()
@@ -693,7 +693,7 @@ public partial class MondayClient : IMondayClient, IDisposable
                 T dataInstance = Activator.CreateInstance<T>();
 
                 // Attempt To Bind The Items.
-                if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item!, ref dataInstance))
+                if (MondayUtilities.TryBindColumnDataAsync(columnPropertyMap!, item!, ref dataInstance))
                 {
                     mondayResponse.Response.Add(new MondayData<T>()
                     {
@@ -1318,7 +1318,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         T instance = Activator.CreateInstance<T>();
 
         // Check for multiple properties of the same type
-        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilties.UnsupportedTypes)
+        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilities.UnsupportedTypes)
         {
             int count = instance.GetType().GetProperties().Count(propertyInfo => propertyInfo.PropertyType == unSupportedType.Key);
             if (count > 1) throw new NotImplementedException(unSupportedType.Value);
@@ -1331,7 +1331,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
         {
             // Attempt to get the type from the GetItemsQueryBuilder
-            if (MondayUtilties.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
+            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
             {
                 // Append the query to the string builder.
                 stringBuilder.Append(query);
@@ -1368,7 +1368,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         if (graphQLResponse.Errors is null && graphQLResponse.Data?.Items?.Count > 0)
         {
             // Get The Column Property Map.
-            Dictionary<string, string> columnPropertyMap = MondayUtilties.GetColumnPropertyMap<T>();
+            Dictionary<string, string> columnPropertyMap = MondayUtilities.GetColumnPropertyMap<T>();
 
             // Loop through each item
             foreach (Item item in graphQLResponse.Data.Items)
@@ -1377,7 +1377,7 @@ public partial class MondayClient : IMondayClient, IDisposable
                 T dataInstance = Activator.CreateInstance<T>();
 
                 // Attempt To Bind The Items.
-                if (MondayUtilties.TryBindColumnDataAsync(columnPropertyMap!, item, ref dataInstance))
+                if (MondayUtilities.TryBindColumnDataAsync(columnPropertyMap!, item, ref dataInstance))
                 {
                     return new MondayResponse<T>()
                     {

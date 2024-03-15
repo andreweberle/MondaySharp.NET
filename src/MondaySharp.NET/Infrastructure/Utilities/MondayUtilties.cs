@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 
 namespace MondaySharp.NET.Infrastructure.Utilities;
 
-public static partial class MondayUtilties
+public static partial class MondayUtilities
 {
     [GeneratedRegexAttribute(@"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", RegexOptions.Compiled)]
     private static partial Regex UrlFromStringExtractor();
@@ -233,27 +233,24 @@ public static partial class MondayUtilties
                 }
 
             case MondayColumnType.Rating:
+
+                // If The Column Text Is Null Or Empty, Return A Column Rating With A None Rating.
+                if (string.IsNullOrEmpty(column.Text))
                 {
-                    int parseResult = 0;
-                    if (int.TryParse(column.Text, out parseResult)) //try parsing the column text
-                    {
-                        if (parseResult < 0 || parseResult > 5) throw new ArgumentException("The rating must be between 0 and 5!"); //if its not between 0 and 5 throw an exception
-
-                        Rating? rating = parseResult switch //parse it to Rating enum
-                        {
-                            0 => Rating.None,
-                            1 => Rating.One,
-                            2 => Rating.Two,
-                            3 => Rating.Three,
-                            4 => Rating.Four,
-                            5 => Rating.Five,
-                            _ => Rating.None
-                        };
-
-                        return new ColumnRating(column.Id, rating);
-                    }
-                    else throw new ArgumentException("The text in the rating column type must be an integer!");
+                    return new ColumnRating(column.Id, MondayRating.None);
                 }
+
+                // If The Column Text Is Not An Integer, Or The Parse Result Is Less Than 0 Or Greater Than 5, Throw An Exception.
+                if (!int.TryParse(column.Text, out int parseResult) || parseResult < 0 || parseResult > 5)
+                {
+                    throw new ArgumentException("The rating must be an integer between 0 and 5!");
+                }
+
+                // Parse it to Rating enum
+                MondayRating rating = (MondayRating)parseResult;
+
+                // Return the Column Rating.
+                return new ColumnRating(column.Id, rating);
 
             default:
                 throw new ArgumentException($"Unsupported column type: {columnType}");
