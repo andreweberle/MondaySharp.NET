@@ -6,6 +6,11 @@ public record ColumnDateTime : ColumnBaseType
     public DateTime? Date { get; set; }
     public bool IncludeTime { get; set; }
 
+    public ColumnDateTime(string? id)
+    {
+        this.Id = id;
+    }
+
     /// <summary>
     /// 
     /// </summary>
@@ -33,6 +38,11 @@ public record ColumnDateTime : ColumnBaseType
 
     public override string ToString()
     {
+        if (this.Date == null)
+        {
+            return "\"" + this.Id + "\" : null";
+        }
+
         return this.IncludeTime
             ? "\"" + this.Id + "\" : {\"date\" : \"" + this.Date?.ToString("yyyy-MM-dd") + "\", \"time\" : \"" + this.Date?.ToString("HH:mm:ss") + "\"}"
             : "\"" + this.Id + "\" : {\"date\" : \"" + this.Date?.ToString("yyyy-MM-dd") + "\"}";

@@ -5,6 +5,11 @@ public record ColumnLongText : ColumnBaseType
     public ColumnLongText() { }
     public string? Text { get; set; }
 
+    public ColumnLongText(string? id)
+    {
+        this.Id = id;
+    }
+
     /// <summary>
     /// 
     /// </summary>
@@ -15,5 +20,13 @@ public record ColumnLongText : ColumnBaseType
         this.Id = id;
         this.Text = text;
     }
-    public override string ToString() => "\"" + this.Id + "\" : {\"text\" : \"" + this.Text + "\"}";
+    public override string ToString()
+    {
+        if (string.IsNullOrEmpty(this.Text))
+        {
+            return "\"" + this.Id + "\" : null";
+        }
+
+        return "\"" + this.Id + "\" : {\"text\" : \"" + this.Text + "\"}";
+    }
 }

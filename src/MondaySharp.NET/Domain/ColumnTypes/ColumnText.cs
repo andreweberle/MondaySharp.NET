@@ -27,5 +27,13 @@ public record ColumnText : ColumnBaseType
     /// 
     /// </summary>
     /// <returns></returns>
-    public override string ToString() => "\"" + this.Id + "\" : \"" + this.Text + "\"";
+    public override string ToString()
+    {
+        if (string.IsNullOrEmpty(this.Text))
+        {
+            return "\"" + this.Id + "\" : null";
+        }
+
+        return "\"" + this.Id + "\" : \"" + this.Text + "\"";
+    }
 }

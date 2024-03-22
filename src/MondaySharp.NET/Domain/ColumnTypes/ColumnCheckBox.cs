@@ -20,5 +20,8 @@ public record ColumnCheckBox : ColumnBaseType
     /// 
     /// </summary>
     /// <returns></returns>
-    public override string ToString() => $"\"{this.Id}\" : {{\"checked\" : \"" + this.IsChecked.ToString().ToLower() + "\"}";
+    public override string ToString()
+    {
+        return this.IsChecked ? $"\"check\" : {{\"checked\" : \"{this.IsChecked.ToString().ToLower()}\"}}" : $"\"{this.Id}\" : null";
+    }
 }

@@ -23,5 +23,13 @@ public record ColumnNumber : ColumnBaseType
     /// 
     /// </summary>
     /// <returns></returns>
-    public override string ToString() => "\"" + this.Id + "\" : \"" + this.Number + "\"";
+    public override string ToString()
+    {
+        if (this.Number == null)
+        {
+            return "\"" + this.Id + "\" : null";
+        }
+
+        return "\"" + this.Id + "\" : \"" + this.Number + "\"";
+    }
 }

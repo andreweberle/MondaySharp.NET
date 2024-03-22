@@ -6,6 +6,11 @@ public record ColumnTag : ColumnBaseType
     public int[]? TagIds { get; set; }
     public string[]? Tags { get; set; }
 
+    public ColumnTag(string? id)
+    {
+        this.Id = id;
+    }
+
     public ColumnTag(string? id, string? text)
     {
         this.Id = id;
@@ -35,10 +40,11 @@ public record ColumnTag : ColumnBaseType
 
     public override string ToString()
     {
+
         return TagIds?.Length switch
         {
             > 0 => "\"" + Id + "\" : {\"tag_ids\" : [" + string.Join(",", TagIds) + "]}",
-            _ => "\"" + Id + "\" : {\"tag_ids\" : []}"
+            _ => "\"" + Id + "\" : null"
         };
     }
 }

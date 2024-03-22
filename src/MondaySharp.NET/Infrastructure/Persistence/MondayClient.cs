@@ -27,7 +27,7 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// 
     /// </summary>
     private readonly GraphQLHttpClient? _graphQLHttpClient;
-    
+
     /// <summary>
     /// 
     /// </summary>
@@ -201,7 +201,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
 
         // Execute The Query.
-        GraphQLResponse<GetBoardItemsByColumnValuesResponse> graphQLResponse = 
+        GraphQLResponse<GetBoardItemsByColumnValuesResponse> graphQLResponse =
             await this._graphQLHttpClient.SendQueryAsync<GetBoardItemsByColumnValuesResponse>(keyValuePairs, cancellationToken);
 
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
@@ -273,7 +273,7 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
     public async Task<Application.MondayResponse<T>> GetBoardItemsAsync<T>(
-        ulong boardId, int limit = 25, 
+        ulong boardId, int limit = 25,
         CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
         // If The GraphQL Client Is Null, Return Null.
@@ -437,11 +437,11 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
     }
 
-    public async Task<Application.MondayResponse<Dictionary<string, Item>?>> CreateBoardItemsAsync<T>(
-        ulong boardId, T[] items, CancellationToken cancellationToken = default) where T : MondayRow
+    public async Task<Application.MondayResponse<Dictionary<ulong, T>?>> CreateBoardItemsAsync<T>(
+        ulong boardId, T[] items, CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
         // If The GraphQL Client Is Null, Return Null.
-        if (this._graphQLHttpClient == null) return new Application.MondayResponse<Dictionary<string, Item>?>()
+        if (this._graphQLHttpClient == null) return new Application.MondayResponse<Dictionary<ulong, T>?>()
         {
             IsSuccessful = false,
             Errors = ["GraphQL Client Is Null."]
@@ -480,7 +480,8 @@ public partial class MondayClient : IMondayClient, IDisposable
             Application.Entities.Group? group = null;
 
             // Foreach property in the item
-            foreach (PropertyInfo propertyInfo in item.value.GetType().GetProperties())
+            foreach (PropertyInfo propertyInfo in item.value.GetType().GetProperties()
+                 .Where(x => x.GetCustomAttribute<MondayColumnTypeUnsupportedWriteAttribute>() == null))
             {
                 // Skip the name property.
                 if (propertyInfo.Name == nameof(item.value.Name)) continue;
@@ -554,31 +555,197 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
 
         // Execute The Query.
-        GraphQLResponse<Dictionary<string, Item>> graphQLResponse = 
+        GraphQLResponse<Dictionary<string, Item>> graphQLResponse =
             await this._graphQLHttpClient.SendMutationAsync<Dictionary<string, Item>>(keyValuePairs, cancellationToken);
 
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
         if (graphQLResponse.Errors is null && graphQLResponse.Data != null)
         {
-            return new Application.MondayResponse<Dictionary<string, Item>?>()
+            // Loop through each response and assign the id to each item.
+            foreach (var item in items.Select((value, i) => new { i, value }))
+            {
+                // Attempt to get the item id.
+                if (graphQLResponse.Data.TryGetValue($"create_item_{item.i}", out Item? createdItem))
+                {
+                    // Assign the id to the item.
+                    item.value.Id = createdItem.Id;
+                }
+            }
+
+            return new Application.MondayResponse<Dictionary<ulong, T>?>()
             {
                 IsSuccessful = true,
-                Response = 
+                Response =
                 [
-                    new MondayData<Dictionary<string, Item>?>()
+                    new MondayData<Dictionary<ulong, T>?>()
                     {
-                        Data = graphQLResponse.Data
+                        Data = items.ToDictionary(x => x.Id, x => x)
                     }
                 ]
             };
         }
 
-        return new Application.MondayResponse<Dictionary<string, Item>?>()
+        return new Application.MondayResponse<Dictionary<ulong, T>?>()
         {
             IsSuccessful = false,
             Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
         };
     }
+
+    public async Task<Application.MondayResponse<Dictionary<ulong, T>?>> UpdateBoardItemAsync<T>(
+        ulong boardId, T[] items, CancellationToken cancellationToken = default) where T : MondayRow, new()
+    {
+        // If The GraphQL Client Is Null, Return Null.
+        if (this._graphQLHttpClient == null) return new MondayResponse<Dictionary<ulong, T>?>()
+        {
+            IsSuccessful = false,
+            Errors = ["GraphQL Client Is Null."]
+        };
+
+        // Create The Response Parameters.
+        const string RESPONSE_PARAMS = @$"{{id name}}";
+
+        // Create parameters for the query
+        StringBuilder parameters = new();
+
+        // Create the mutation
+        StringBuilder mutation = new();
+
+        // Append the parameters
+        parameters.Append("$boardId: ID!,");
+
+        // Create a dictionary to store variables dynamically
+        Dictionary<string, object> variables = new()
+        {
+            { "boardId", boardId }
+        };
+
+        foreach (var item in items.Select((value, i) => new { i, value }))
+        {
+            // Check if there is an item name.
+            if (string.IsNullOrEmpty(item.value.Name?.Text)) throw new NullReferenceException(nameof(item.value.Name));
+
+            // Generate a unique variable name based on the item index
+            string variableName = $"columnValues{item.i}";
+
+            // Add Item Id To The Variables.
+            variables.Add($"itemId{item.i}", item.value.Id);
+
+            // Add Item Id To The Parameters.
+            parameters.Append($"$itemId{item.i}: ID!,");
+
+            // Check if the column values are null
+            List<ColumnBaseType> columnValues = [];
+
+            // Foreach property in the item that doesnt contain the attribute 'MondayColumnTypeUnsupportedWriteAttribute'
+            foreach (PropertyInfo propertyInfo in item.value.GetType().GetProperties()
+                .Where(x => x.PropertyType.GetCustomAttribute<MondayColumnTypeUnsupportedWriteAttribute>() is null))
+            {
+                // Skip the id property.
+                if (propertyInfo.Name == nameof(item.value.Id)) continue;
+
+                // Check if the property is a MondayGroupType.
+                if (propertyInfo.PropertyType == typeof(Application.Entities.Group))
+                {
+                    continue;
+                }
+
+                // Check if the property is a ColumnBaseType
+                if (propertyInfo.PropertyType.IsSubclassOf(typeof(Domain.ColumnTypes.ColumnBaseType)))
+                {
+                    // Get the column base type
+                    ColumnBaseType? columnBaseType = (ColumnBaseType?)propertyInfo.GetValue(item.value);
+
+                    // Check if the column base type is not null
+                    if (columnBaseType is not null)
+                    {
+                        // Check there is an id.
+                        if (string.IsNullOrEmpty(columnBaseType.Id))
+                        {
+                            // Check if there is an attribute.
+                            if (propertyInfo.GetCustomAttribute<MondayColumnHeaderAttribute>() is not null)
+                            {
+                                // Set the id to the attribute id.
+                                columnBaseType.Id = propertyInfo.GetCustomAttribute<MondayColumnHeaderAttribute>()!.ColumnId;
+                            }
+                            else
+                            {
+                                // Use the property name as the id.
+                                columnBaseType.Id = propertyInfo.Name;
+                            }
+                        }
+
+                        // Add the column base type to the list
+                        columnValues.Add(columnBaseType);
+                    }
+                    else
+                    {
+                        // Check if there is an attribute.
+                        if (propertyInfo.GetCustomAttribute<MondayColumnHeaderAttribute>() is not null)
+                        {
+                            // Get Type of ColumnBaseType.
+                            columnBaseType = (ColumnBaseType?)Activator.CreateInstance(propertyInfo.PropertyType, propertyInfo.GetCustomAttribute<MondayColumnHeaderAttribute>()!.ColumnId);
+                        }
+                        else
+                        {
+                            // Get Type of ColumnBaseType.
+                            columnBaseType = (ColumnBaseType?)Activator.CreateInstance(propertyInfo.PropertyType);
+                        }
+
+                        if (columnBaseType is null) continue;
+
+                        // Add the column base type to the list
+                        columnValues.Add(columnBaseType);
+                    }
+                }
+            }
+
+            // Add the variable to the dictionary
+
+            variables.Add(variableName, MondayUtilities.ToColumnValuesJson(columnValues));
+
+            // Append the parameters
+            parameters.Append($"${variableName}: JSON!,");
+
+            // Append the mutation
+            mutation.Append($" change_multiple_column_values_{item.i}: change_multiple_column_values(item_id: $itemId{item.i}, board_id: $boardId, column_values: ${variableName}) {RESPONSE_PARAMS}");
+        }
+
+        // Construct the GraphQL query
+        GraphQLRequest keyValuePairs = new()
+        {
+            Query = $@"mutation ({parameters}) {{
+                {mutation}
+            }}",
+            Variables = variables
+        };
+
+        // Execute The Query.
+        GraphQLResponse<Dictionary<string, Item>> graphQLResponse =
+            await this._graphQLHttpClient.SendMutationAsync<Dictionary<string, Item>>(keyValuePairs, cancellationToken);
+
+        // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
+        if (graphQLResponse.Errors is null && graphQLResponse.Data != null)
+        {
+            return new MondayResponse<Dictionary<ulong, T>?>()
+            {
+                IsSuccessful = true,
+                Response =
+                [
+                    new MondayData<Dictionary<ulong, T>?>()
+                    {
+                        Data = items.ToDictionary(x => x.Id, x => x)
+                    }
+                ]
+            };
+        }
+
+        return new MondayResponse<Dictionary<ulong, T>?>()
+        {
+            IsSuccessful = false,
+            Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+        };
+    }   
 
     /// <summary>
     /// 
@@ -1435,17 +1602,14 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="itemId"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public async Task<MondayResponse<T>> GetBoardItemAsync<T>(ulong itemId) where T : MondayRow, new()
+    public async Task<MondayResponse<T>> GetBoardItemAsync<T>(ulong itemId, CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
         // If The GraphQL Client Is Null, Return Null.
-        if (this._graphQLHttpClient == null)
+        if (this._graphQLHttpClient == null) return new MondayResponse<T>()
         {
-            return new MondayResponse<T>()
-            {
-                IsSuccessful = false,
-                Errors = ["GraphQL Client Is Null."]
-            };
-        }
+            IsSuccessful = false,
+            Errors = ["GraphQL Client Is Null."]
+        };
 
         // Create New Instance Of T Type.
         T instance = Activator.CreateInstance<T>();
@@ -1495,7 +1659,8 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
 
         // Execute The Query.
-        GraphQLResponse<ItemsPageByColumnValue> graphQLResponse = await this._graphQLHttpClient.SendQueryAsync<ItemsPageByColumnValue>(keyValuePairs);
+        GraphQLResponse<ItemsPageByColumnValue> graphQLResponse = 
+            await this._graphQLHttpClient.SendQueryAsync<ItemsPageByColumnValue>(keyValuePairs, cancellationToken);
 
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
         if (graphQLResponse.Errors is null && graphQLResponse.Data?.Items?.Count > 0)
