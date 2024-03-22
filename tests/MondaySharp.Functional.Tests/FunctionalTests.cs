@@ -932,7 +932,7 @@ public class FunctionalTests
         testRow.Name.Text = null;
             
         // Attempt To Update The Item.
-        mondayResponse = await this.MondayClient!.UpdateBoardItemAsync<TestRow>(this.BoardId, [testRow]);
+        mondayResponse = await this.MondayClient!.UpdateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
