@@ -56,6 +56,11 @@ public record ColumnDropDown : ColumnBaseType
 
     public override string ToString()
     {
+        if (this.Label != null)
+        {
+            return $"\"{this.Id}\" : {{\"labels\":[\"{this.Label}\"]}}";
+        }
+
         if (this.Labels != null && this.Labels.Length > 0)
         {
             return $"\"{this.Id}\" : {{\"labels\":[{string.Join(",", this.Labels.Select(label => $"\"{label}\""))}]}}";

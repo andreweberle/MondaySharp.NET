@@ -4,6 +4,7 @@ public record ColumnTag : ColumnBaseType
 {
     public ColumnTag() { }
     public int[]? TagIds { get; set; }
+    public string[]? Tags { get; set; }
 
     public ColumnTag(string? id, string? text)
     {
@@ -11,13 +12,18 @@ public record ColumnTag : ColumnBaseType
 
         if (!string.IsNullOrWhiteSpace(text))
         {
-            // Split at , and try parse into int array
+            // Split at , and try parse into int array if possible.
             this.TagIds = text
                 .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => int.TryParse(s, out int result) ? result : (int?)null)
                 .Where(i => i.HasValue)
                 .Select(i => i!.Value)
                 .ToArray();
+
+            if (this.TagIds.Length == 0)
+            {
+                this.Tags = text.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            }
         }
     }
 

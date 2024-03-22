@@ -15,7 +15,7 @@ using System.Text.Json;
 namespace MondaySharp.Functional.Tests;
 
 [TestClass]
-public class UnitTest1
+public class FunctionalTests
 {
     IMondayClient? MondayClient { get; set; }
     IConfiguration? Configuration { get; set; } = null!;
@@ -767,6 +767,85 @@ public class UnitTest1
     }
 
     [TestMethod]
+    public async Task CreateItemFromMondayRow_Should_Be_Ok()
+    {
+        // Arrange
+        TestRow testRow = new()
+        {
+            Name = new ColumnText()
+            {
+                Text = "Test Item 1"
+            },
+            Text = new ColumnText()
+            {
+                Text = "Andrew Eberle"
+            },
+            Number = new ColumnNumber()
+            {
+                Number = 10
+            },
+            Email = new ColumnEmail()
+            {
+                Email = "andrew.eberle@lithocraft.com.au"
+            },
+            Rating = new ColumnRating()
+            {
+                Rating = MondayRating.Five
+            },
+            Checkbox = new ColumnCheckBox()
+            {
+                IsChecked = true
+            },
+            Date = new ColumnDateTime()
+            {
+                Date = new DateTime(2023, 11, 29)
+            },
+            Dropdown = new ColumnDropDown()
+            {
+                Label = "Hello"
+            },
+            LongText = new ColumnLongText()
+            {
+                Text = "Hello, World!"
+            },
+            Link = new ColumnLink()
+            {
+                Text = "Google",
+                Uri = new Uri("https://www.google.com")
+            },
+            Priority = new ColumnStatus()
+            {
+                Status = "High"
+            },
+            Status = new ColumnStatus()
+            {
+                Status = "Done"
+            },
+            Timeline = new ColumnTimeline()
+            {
+                From = new DateTime(2023, 11, 29),
+                To = new DateTime(2023, 12, 29)
+            },
+            Tags = new ColumnTag()
+            {
+                TagIds = [21057674, 21057675]
+            }
+        };
+
+        // Act
+        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponse = 
+            await this.MondayClient!.CreateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
+
+        // Attempt to get the item
+        NET.Application.MondayResponse<TestRow> item = await this.MondayClient!.GetBoardItemAsync<TestRow>(
+            mondayResponse.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+    }
+
+    [TestMethod]
     public async Task Cleanup()
     {
         // Get All Items
@@ -837,5 +916,13 @@ public class UnitTest1
 
         [MondayColumnHeader("rating")]
         public ColumnRating? Rating { get; set; }
+    }
+
+    public record Test2Row : MondayRow
+    {
+        [MondayColumnHeader("text0")]
+        public ColumnText? Text { get; set; }
+
+        public Group? Group { get; set; }
     }
 }
