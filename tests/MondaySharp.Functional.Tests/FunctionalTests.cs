@@ -929,10 +929,10 @@ public class FunctionalTests
         testRow.Timeline = null;
         testRow.Tags = null;
         testRow.Rating = null;
-        testRow.Name.Text = "Updated Item 2";
+        testRow.Name.Text = "Updated Item";
             
         // Attempt To Update The Item.
-        mondayResponse = await this.MondayClient!.UpdateBoardItemAsync<TestRow>(this.BoardId, [testRow]);
+        mondayResponse = await this.MondayClient!.UpdateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
