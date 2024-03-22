@@ -592,7 +592,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
     }
 
-    public async Task<Application.MondayResponse<Dictionary<ulong, T>?>> UpdateBoardItemAsync<T>(
+    public async Task<Application.MondayResponse<Dictionary<ulong, T>?>> UpdateBoardItemsAsync<T>(
         ulong boardId, T[] items, CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
         // If The GraphQL Client Is Null, Return Null.
