@@ -16,6 +16,6 @@ public interface IMondayClient
     public Task<Application.MondayResponse<Dictionary<string, Asset>>> UploadFileToUpdateAsync(Update[] updates, CancellationToken cancellationToken = default);
     public Task<Application.MondayResponse<Dictionary<string, Asset>>> UploadFileToColumnAsync(Item[] items, CancellationToken cancellationToken = default);
     public Task<Application.MondayResponse<T>> GetBoardItemsAsync<T>(string? cursor, int limit = 25, CancellationToken cancellationToken = default) where T : MondayRow, new();
-    public Task<Application.MondayResponse<Dictionary<ulong, T>?>> UpdateBoardItemAsync<T>(ulong boardId, T[] items, CancellationToken cancellationToken = default) where T : MondayRow, new();
+    public Task<Application.MondayResponse<Dictionary<ulong, T>?>> UpdateBoardItemsAsync<T>(ulong boardId, T[] items, CancellationToken cancellationToken = default) where T : MondayRow, new();
     public void Dispose();
 }
