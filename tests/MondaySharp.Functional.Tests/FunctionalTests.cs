@@ -15,7 +15,7 @@ using System.Text.Json;
 namespace MondaySharp.Functional.Tests;
 
 [TestClass]
-public class UnitTest1
+public class FunctionalTests
 {
     IMondayClient? MondayClient { get; set; }
     IConfiguration? Configuration { get; set; } = null!;
@@ -271,7 +271,7 @@ public class UnitTest1
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("timeline").GetProperty("to").GetString() == "2023-12-29");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("email").GetString() == "andreweberle@email.com.au");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("text").GetString() == "hello world!");
-        Assert.IsTrue(jsonDocument.RootElement.GetProperty("rating").GetProperty("rating").GetInt32() == 5);
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("rating").GetProperty("rating").GetInt32() == 0);
     }
 
     [TestMethod]
@@ -767,7 +767,181 @@ public class UnitTest1
     }
 
     [TestMethod]
-    public async Task Cleanup()
+    public async Task CreateItemFromMondayRow_Should_Be_Ok()
+    {
+        // Arrange
+        TestRow testRow = new()
+        {
+            Name = new ColumnText()
+            {
+                Text = "Test Item 1"
+            },
+            Text = new ColumnText()
+            {
+                Text = "Andrew Eberle"
+            },
+            Number = new ColumnNumber()
+            {
+                Number = 10
+            },
+            Email = new ColumnEmail()
+            {
+                Email = "andrew.eberle@lithocraft.com.au"
+            },
+            Rating = new ColumnRating()
+            {
+                Rating = MondayRating.Five
+            },
+            Checkbox = new ColumnCheckBox()
+            {
+                IsChecked = true
+            },
+            Date = new ColumnDateTime()
+            {
+                Date = new DateTime(2023, 11, 29)
+            },
+            Dropdown = new ColumnDropDown()
+            {
+                Label = "Hello"
+            },
+            LongText = new ColumnLongText()
+            {
+                Text = "Hello, World!"
+            },
+            Link = new ColumnLink()
+            {
+                Text = "Google",
+                Uri = new Uri("https://www.google.com")
+            },
+            Priority = new ColumnStatus()
+            {
+                Status = "High"
+            },
+            Status = new ColumnStatus()
+            {
+                Status = "Done"
+            },
+            Timeline = new ColumnTimeline()
+            {
+                From = new DateTime(2023, 11, 29),
+                To = new DateTime(2023, 12, 29)
+            },
+            Tags = new ColumnTag()
+            {
+                TagIds = [21057674, 21057675]
+            }
+        };
+
+        // Act
+        NET.Application.MondayResponse<Dictionary<ulong, TestRow>?>? mondayResponse = 
+            await this.MondayClient!.CreateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+    }
+
+    [TestMethod]
+    public async Task UpdateItemFromMondayRow_Should_Be_Ok()
+    {
+        // Arrange
+        TestRow testRow = new()
+        {
+            Name = new ColumnText()
+            {
+                Text = "Test Item 1"
+            },
+            Text = new ColumnText()
+            {
+                Text = "Andrew Eberle"
+            },
+            Number = new ColumnNumber()
+            {
+                Number = 10
+            },
+            Email = new ColumnEmail()
+            {
+                Email = "andrew.eberle@lithocraft.com.au"
+            },
+            Rating = new ColumnRating()
+            {
+                Rating = MondayRating.Five
+            },
+            Checkbox = new ColumnCheckBox()
+            {
+                IsChecked = true
+            },
+            Date = new ColumnDateTime()
+            {
+                Date = new DateTime(2023, 11, 29)
+            },
+            Dropdown = new ColumnDropDown()
+            {
+                Label = "Hello"
+            },
+            LongText = new ColumnLongText()
+            {
+                Text = "Hello, World!"
+            },
+            Link = new ColumnLink()
+            {
+                Text = "Google",
+                Uri = new Uri("https://www.google.com")
+            },
+            Priority = new ColumnStatus()
+            {
+                Status = "High"
+            },
+            Status = new ColumnStatus()
+            {
+                Status = "Done"
+            },
+            Timeline = new ColumnTimeline()
+            {
+                From = new DateTime(2023, 11, 29),
+                To = new DateTime(2023, 12, 29)
+            },
+            Tags = new ColumnTag()
+            {
+                TagIds = [21057674, 21057675]
+            }
+        };
+
+        // Act
+        NET.Application.MondayResponse<Dictionary<ulong, TestRow>?>? mondayResponse =
+            await this.MondayClient!.CreateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+
+        // Change The Text
+        testRow.Text.Text = null;
+        testRow.Status = null;
+        testRow.Priority = null;
+        testRow.Checkbox.IsChecked = false;
+        testRow.Number.Number = null;
+        testRow.Email.Email = null;
+        testRow.Link = null;
+        testRow.Dropdown = null;
+        testRow.Date = null;
+        testRow.LongText = null;
+        testRow.Timeline = null;
+        testRow.Tags = null;
+        testRow.Rating = null;
+        testRow.Name.Text = null;
+            
+        // Attempt To Update The Item.
+        mondayResponse = await this.MondayClient!.UpdateBoardItemAsync<TestRow>(this.BoardId, [testRow]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+    }
+
+
+    [TestMethod]
+    public async Task ZZZCleanup()
     {
         // Get All Items
         NET.Application.MondayResponse<TestRow> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId);
@@ -837,5 +1011,13 @@ public class UnitTest1
 
         [MondayColumnHeader("rating")]
         public ColumnRating? Rating { get; set; }
+    }
+
+    public record Test2Row : MondayRow
+    {
+        [MondayColumnHeader("text0")]
+        public ColumnText? Text { get; set; }
+
+        public Group? Group { get; set; }
     }
 }

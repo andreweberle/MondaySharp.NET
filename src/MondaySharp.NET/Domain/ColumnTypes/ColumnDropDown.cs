@@ -56,18 +56,23 @@ public record ColumnDropDown : ColumnBaseType
 
     public override string ToString()
     {
+        if (this.Label != null)
+        {
+            return $"\"{this.Id}\" : {{\"labels\":[\"{this.Label}\"]}}";
+        }
+
         if (this.Labels != null && this.Labels.Length > 0)
         {
             return $"\"{this.Id}\" : {{\"labels\":[{string.Join(",", this.Labels.Select(label => $"\"{label}\""))}]}}";
         }
 
-        if (this.LabelId != 0)
+        if (this.LabelId != null)
         {
             return $"\"{this.Id}\" : \"{this.LabelId}\"";
         }
         else
         {
-            return $"\"{this.Id}\" : \"{this.Label}\"";
+            return $"\"{this.Id}\" : null";
         }
     }
 }

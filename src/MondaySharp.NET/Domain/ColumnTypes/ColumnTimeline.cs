@@ -26,6 +26,11 @@ public record ColumnTimeline : ColumnBaseType
 
     public override string ToString()
     {
+        if (this.From == null && this.To == null)
+        {
+            return "\"" + this.Id + "\" : null";
+        }
+
         return this.From != null && this.To != null
             ? "\"" + this.Id + "\" : {\"from\" : \"" + this.From.Value.ToString("yyyy-MM-dd") + "\", \"to\" : \"" + this.To.Value.ToString("yyyy-MM-dd") + "\"}"
             : base.ToString();

@@ -8,6 +8,11 @@ public record ColumnRating : ColumnBaseType
 
     public ColumnRating() { }
 
+    public ColumnRating(string? id)
+    {
+        this.Id = id;
+    }
+
     /// <summary>
     /// 
     /// </summary>
@@ -23,5 +28,8 @@ public record ColumnRating : ColumnBaseType
     /// 
     /// </summary>
     /// <returns></returns>
-    public override string ToString() => $"\"{this.Id}\" : {{\"rating\" : {(int?)this.Rating ?? 0}}}";
+    public override string ToString()
+    {
+        return $"\"{this.Id}\" : {{\"rating\" : {(int?)this.Rating ?? 0}}}";
+    }
 }

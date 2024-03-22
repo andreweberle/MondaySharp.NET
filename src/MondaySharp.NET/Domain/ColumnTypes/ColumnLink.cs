@@ -25,7 +25,6 @@ public record ColumnLink : ColumnBaseType
     public ColumnLink(string? id)
     {
         this.Id = id;
-        this.Uri = null;
     }
 
     /// <summary>
@@ -50,6 +49,11 @@ public record ColumnLink : ColumnBaseType
 
     public override string ToString()
     {
+        if (this.Uri == null)
+        {
+            return "\"" + this.Id + "\" : null";
+        }
+
         return "\"" + this.Id + "\" : {\"url\" : \"" + this.Uri?.OriginalString + "\", \"text\":\"" + this.Text + "\"}";
     }
 }
