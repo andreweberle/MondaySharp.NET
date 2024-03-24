@@ -126,7 +126,18 @@ public class FunctionalTests
         ];
 
         // Act
-        NET.Application.MondayResponse<TestRowWithAssets> mondayResponses = await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, limit: 500);
+        await this.MondayClient!.CreateBoardItemsAsync<TestRowWithAssets>(BoardId, [new TestRowWithAssets()
+        {
+            Name = "Test Item 1",
+            Text = new ColumnText()
+            {
+                Id = "text0",
+                Text = "Andrew Eberle"
+            }
+        }]);
+
+        NET.Application.MondayResponse<TestRowWithAssets> mondayResponses = 
+            await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, columnValues);
 
         // Assert
         Assert.IsTrue(mondayResponses.Response?.Count > 0);
@@ -196,17 +207,17 @@ public class FunctionalTests
         };
 
         // Create the item
-        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseCreate = 
+        NET.Application.MondayResponse<Item> mondayResponseCreate = 
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, [newItem]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
         Assert.IsNull(mondayResponseCreate.Errors);
         Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
-        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Name == newItem.Name);
+        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.Name == newItem.Name);
 
         // Assign the id to the item
-        ulong boardItemId = mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0;
+        ulong boardItemId = mondayResponseCreate.Response.FirstOrDefault()?.Data?.Id ?? 0;
 
         NET.Application.MondayResponse<TestRow> item = await this.MondayClient!.GetBoardItemAsync<TestRow>(boardItemId);
 
@@ -355,15 +366,15 @@ public class FunctionalTests
         ];
 
         // Act
-        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponse = 
+        NET.Application.MondayResponse<Item> mondayResponse = 
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, items);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
-        Assert.IsTrue(mondayResponse.Response?.Count == 1);
-        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Values.FirstOrDefault()?.Name == items.FirstOrDefault()?.Name);
-        Assert.IsTrue(mondayResponse.Response?.LastOrDefault()?.Data?.Values.LastOrDefault()?.Name == items.LastOrDefault()?.Name);
+        Assert.IsTrue(mondayResponse.Response?.Count == 2);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == items.FirstOrDefault()?.Name);
+        Assert.IsTrue(mondayResponse.Response?.LastOrDefault()?.Data?.Name == items.LastOrDefault()?.Name);
     }
 
     [TestMethod]
@@ -373,25 +384,26 @@ public class FunctionalTests
         Update[] updates = [
             new Update()
             {
-                Id = 5718383580,
+                ItemId = 5718383580,
                 TextBody = "Test Update 1"
             },
             new Update()
             {
-                Id = 5718383580,
+                ItemId = 5718383580,
                 TextBody = "Test Update 2"
             }
         ];
 
         // Act
-        NET.Application.MondayResponse<Dictionary<string, Update>?>? mondayResponse = await this.MondayClient!.CreateItemsUpdateAsync(updates);
+        NET.Application.MondayResponse<Update> mondayResponse = await this.MondayClient!.CreateItemsUpdateAsync(updates);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
-        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Count == 2);
-        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.TextBody == updates.FirstOrDefault()?.TextBody);
-        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.LastOrDefault().Value.TextBody == updates.LastOrDefault()?.TextBody);
+        Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id > 0));
+        Assert.IsTrue(mondayResponse.Response?.Count == 2);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.TextBody == updates.FirstOrDefault()?.TextBody);
+        Assert.IsTrue(mondayResponse.Response?.LastOrDefault()?.Data?.TextBody == updates.LastOrDefault()?.TextBody);
     }
 
     [TestMethod]
@@ -424,17 +436,13 @@ public class FunctionalTests
         };
 
         // Act
-        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponse = 
+        NET.Application.MondayResponse<Item> mondayResponse = 
             await this.MondayClient!.CreateBoardItemsAsync(this.BoardId, [item]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
         Assert.IsTrue(mondayResponse.Response?.Count == 1);
-
-        // Assign the id to the item
-        item.Id = mondayResponse.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0;
-
         Assert.IsTrue(item.Id > 0);
 
         // Act
@@ -444,7 +452,7 @@ public class FunctionalTests
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
         Assert.IsTrue(mondayResponse.Response?.Count == 1);
-        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id == item.Id);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == item.Id);
     }
 
     [TestMethod]
@@ -501,34 +509,30 @@ public class FunctionalTests
         };
 
         // Create the items
-        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseCreate = 
+        NET.Application.MondayResponse<Item> mondayResponseCreate = 
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item, item2]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
         Assert.IsNull(mondayResponseCreate.Errors);
-        Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseCreate.Response?.Count == 2);
 
-        Assert.IsTrue(mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Name == item.Name);
-        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.LastOrDefault().Value.Name == item2.Name);
-
-        // Assign the ids to the items
-        item.Id = mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0;
-        item2.Id = mondayResponseCreate.Response.FirstOrDefault()?.Data?.LastOrDefault().Value.Id ?? 0;
+        Assert.IsTrue(mondayResponseCreate.Response.FirstOrDefault()?.Data?.Name == item.Name);
+        Assert.IsTrue(mondayResponseCreate.Response?.LastOrDefault()?.Data?.Name == item2.Name);
 
         Assert.IsTrue(item.Id > 0);
         Assert.IsTrue(item2.Id > 0);
 
         // Act
-        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponse =
+        NET.Application.MondayResponse<Item> mondayResponse =
             await this.MondayClient!.DeleteItemsAsync([item, item2]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
-        Assert.IsTrue(mondayResponse.Response?.Count == 1);
-        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id == item.Id);
-        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.LastOrDefault().Value.Id == item2.Id);
+        Assert.IsTrue(mondayResponse.Response?.Count == 2);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == item.Id);
+        Assert.IsTrue(mondayResponse.Response?.LastOrDefault()?.Data?.Id == item2.Id);
     }
 
     [TestMethod]
@@ -536,12 +540,12 @@ public class FunctionalTests
     {
         // Arrange
         // Act
-        NET.Application.MondayResponse<List<Board>> mondayResponse = 
+        NET.Application.MondayResponse<Board> mondayResponse = 
             await this.MondayClient!.GetBoardsAsync([this.BoardId]);
 
         // Assert
         Assert.IsTrue(mondayResponse.Response?.Count == 1);
-        //Assert.IsTrue(mondayResponse.Data.FirstOrDefault()?.Id == this.BoardId);
+        Assert.IsTrue(mondayResponse.Response.FirstOrDefault()?.Data?.Id == this.BoardId);
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Errors is null);
     }
@@ -551,7 +555,7 @@ public class FunctionalTests
     {
         // Arrange
         // Act
-        NET.Application.MondayResponse<List<Board>> boards = await this.MondayClient!.GetBoardsAsync();
+        NET.Application.MondayResponse<Board> boards = await this.MondayClient!.GetBoardsAsync();
 
         // Assert
         Assert.IsTrue(boards.Response?.Count <= 10);
@@ -611,19 +615,16 @@ public class FunctionalTests
         };
 
         // Create the item
-        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseCreate = 
+        NET.Application.MondayResponse<Item> mondayResponseCreate = 
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item, item1]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
         Assert.IsNull(mondayResponseCreate.Errors);
-        Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseCreate.Response?.Count == 2);
 
-        Assert.IsTrue(mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Name == item.Name);
-        Assert.IsTrue(mondayResponseCreate.Response.FirstOrDefault()?.Data?.LastOrDefault().Value.Name == item1.Name);
-
-        item.Id = mondayResponseCreate.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0;
-        item1.Id = mondayResponseCreate.Response?.FirstOrDefault()?.Data?.LastOrDefault().Value.Id ?? 0;
+        Assert.IsTrue(mondayResponseCreate.Response.FirstOrDefault()?.Data?.Name == item.Name);
+        Assert.IsTrue(mondayResponseCreate.Response.LastOrDefault()?.Data?.Name == item1.Name);
 
         Assert.IsTrue(item.Id > 0);
         Assert.IsTrue(item1.Id > 0);
@@ -646,7 +647,7 @@ public class FunctionalTests
         item1.FileUpload = fileUpload1;
 
         // Act
-        NET.Application.MondayResponse<Dictionary<string, Asset>> uploadFilesMondayResponse =
+        NET.Application.MondayResponse<Asset> uploadFilesMondayResponse =
             await this.MondayClient!.UploadFileToColumnAsync([item, item1]);
 
         // Assert
@@ -655,15 +656,15 @@ public class FunctionalTests
         Assert.IsTrue(uploadFilesMondayResponse.Errors is null);
 
         // Delete the item
-        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseDelete = 
+        NET.Application.MondayResponse<Item> mondayResponseDelete = 
             await this.MondayClient!.DeleteItemsAsync([item, item1]);
 
         // Assert
         Assert.IsTrue(mondayResponseDelete.IsSuccessful);
         Assert.IsNull(mondayResponseDelete.Errors);
-        Assert.IsTrue(mondayResponseDelete.Response?.Count == 1);
-        Assert.IsTrue(mondayResponseDelete.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id == item.Id);
-        Assert.IsTrue(mondayResponseDelete.Response.FirstOrDefault()?.Data?.LastOrDefault().Value.Id == item1.Id);
+        Assert.IsTrue(mondayResponseDelete.Response?.Count == 2);
+        Assert.IsTrue(mondayResponseDelete.Response.FirstOrDefault()?.Data?.Id == item.Id);
+        Assert.IsTrue(mondayResponseDelete.Response.LastOrDefault()?.Data?.Id == item1.Id);
     }
 
     [TestMethod]
@@ -706,48 +707,46 @@ public class FunctionalTests
         };
 
         // Create the item
-        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseCreate = 
+        NET.Application.MondayResponse<Item> mondayResponseCreate = 
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
         Assert.IsNull(mondayResponseCreate.Errors);
         Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
-        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Name == item.Name);
-
-        item.Id = mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id ?? 0;
+        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.Name == item.Name);
 
         // Create Update For The Item
         Update update = new()
         {
-            Id = mondayResponseCreate.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id,
+            ItemId = mondayResponseCreate.Response.FirstOrDefault()?.Data?.Id,
             TextBody = "Test Update 1"
         };
 
         // Act
-        NET.Application.MondayResponse<Dictionary<string, Update>?>? mondayResponse = 
+        NET.Application.MondayResponse<Update> mondayResponse = 
             await this.MondayClient!.CreateItemsUpdateAsync([update]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsNull(mondayResponse.Errors);
         Assert.IsTrue(mondayResponse.Response?.Count == 1);
-        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.TextBody == update.TextBody);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.TextBody == update.TextBody);
 
         // Arrange
         Update update0 = new()
         {
-            Id = mondayResponse.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id,
+            ItemId = mondayResponse.Response.FirstOrDefault()?.Data?.Id,
             FileUpload = new FileUpload() { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
         Update update1 = new()
         {
-            Id = mondayResponse.Response.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id,
+            ItemId = mondayResponse.Response.FirstOrDefault()?.Data?.Id,
             FileUpload = new FileUpload() { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
 
         // Act
-        NET.Application.MondayResponse<Dictionary<string, Asset>> uploadFilesMondayResponse =
+        NET.Application.MondayResponse<Asset> uploadFilesMondayResponse =
             await this.MondayClient!.UploadFileToUpdateAsync([update0, update1]);
 
         // Assert
@@ -756,14 +755,14 @@ public class FunctionalTests
         Assert.IsTrue(uploadFilesMondayResponse.Errors is null);
 
         // Delete the item
-        NET.Application.MondayResponse<Dictionary<string, Item>?>? mondayResponseDelete = 
+        NET.Application.MondayResponse<Item> mondayResponseDelete = 
             await this.MondayClient!.DeleteItemsAsync([item]);
 
         // Assert
         Assert.IsTrue(mondayResponseDelete.IsSuccessful);
         Assert.IsNull(mondayResponseDelete.Errors);
         Assert.IsTrue(mondayResponseDelete.Response?.Count == 1);
-        Assert.IsTrue(mondayResponseDelete.Response?.FirstOrDefault()?.Data?.FirstOrDefault().Value.Id == item.Id);
+        Assert.IsTrue(mondayResponseDelete.Response?.FirstOrDefault()?.Data?.Id == item.Id);
     }
 
     [TestMethod]
@@ -772,10 +771,7 @@ public class FunctionalTests
         // Arrange
         TestRow testRow = new()
         {
-            Name = new ColumnText()
-            {
-                Text = "Test Item 1"
-            },
+            Name = "Test Item 1",
             Text = new ColumnText()
             {
                 Text = "Andrew Eberle"
@@ -833,11 +829,13 @@ public class FunctionalTests
         };
 
         // Act
-        NET.Application.MondayResponse<Dictionary<ulong, TestRow>?>? mondayResponse = 
+        NET.Application.MondayResponse<TestRow> mondayResponse = 
             await this.MondayClient!.CreateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
         Assert.IsNull(mondayResponse.Errors);
     }
 
@@ -847,10 +845,7 @@ public class FunctionalTests
         // Arrange
         TestRow testRow = new()
         {
-            Name = new ColumnText()
-            {
-                Text = "Test Item 1"
-            },
+            Name = "Test Item 1",
             Text = new ColumnText()
             {
                 Text = "Andrew Eberle"
@@ -908,11 +903,12 @@ public class FunctionalTests
         };
 
         // Act
-        NET.Application.MondayResponse<Dictionary<ulong, TestRow>?>? mondayResponse =
+        NET.Application.MondayResponse<TestRow> mondayResponse =
             await this.MondayClient!.CreateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
         Assert.IsNull(mondayResponse.Errors);
 
         // Change The Text
@@ -929,16 +925,17 @@ public class FunctionalTests
         testRow.Timeline = null;
         testRow.Tags = null;
         testRow.Rating = null;
-        testRow.Name.Text = "Updated Item";
+        testRow.Name = "Updated Item";
             
         // Attempt To Update The Item.
         mondayResponse = await this.MondayClient!.UpdateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
         Assert.IsNull(mondayResponse.Errors);
     }
-
 
     [TestMethod]
     public async Task ZZZCleanup()
@@ -957,17 +954,14 @@ public class FunctionalTests
     {
         public Group? Group { get; set; }
     }
-
     public record TestRowWithAssets : TestRow
     {
         public List<Asset>? Assets { get; set; }
     }
-
     public record TestRowWithUpdates : TestRow
     {
         public List<Update>? Updates { get; set; }
     }
-
     public record TestRow : MondayRow
     {
         [MondayColumnHeader("text0")]
@@ -1012,7 +1006,6 @@ public class FunctionalTests
         [MondayColumnHeader("rating")]
         public ColumnRating? Rating { get; set; }
     }
-
     public record Test2Row : MondayRow
     {
         [MondayColumnHeader("text0")]

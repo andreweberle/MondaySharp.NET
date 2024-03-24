@@ -55,7 +55,7 @@ public static partial class MondayUtilities
 
         // Assign Default Values.
         destination.Id = item.Id;
-        destination.Name = new ColumnText(nameof(item.Name), item.Name);
+        destination.Name = item.Name;
 
         SetPropertyIfExists(destinationType, nameof(item.Group), item.Group, destination);
         SetPropertyIfExists(destinationType, nameof(item.Assets), item.Assets, destination);

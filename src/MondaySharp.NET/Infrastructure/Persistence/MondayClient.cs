@@ -419,6 +419,16 @@ public partial class MondayClient : IMondayClient, IDisposable
 
             return mondayResponse;
         }
+        else if (graphQLResponse.Errors is null
+            && graphQLResponse.Data?.Boards?.Count > 0
+            && graphQLResponse.Data?.Boards?.Any(x => x.ItemsCount == 0) == true)
+        {
+            return new MondayResponse<T>()
+            {
+                IsSuccessful = true,
+                Errors = ["No Items Found."],
+            };
+        }
         else if (graphQLResponse.Errors is not null)
         {
             return new Application.MondayResponse<T>()
@@ -437,11 +447,11 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
     }
 
-    public async Task<Application.MondayResponse<Dictionary<ulong, T>?>> CreateBoardItemsAsync<T>(
+    public async Task<Application.MondayResponse<T>> CreateBoardItemsAsync<T>(
         ulong boardId, T[] items, CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
         // If The GraphQL Client Is Null, Return Null.
-        if (this._graphQLHttpClient == null) return new Application.MondayResponse<Dictionary<ulong, T>?>()
+        if (this._graphQLHttpClient == null) return new MondayResponse<T>()
         {
             IsSuccessful = false,
             Errors = ["GraphQL Client Is Null."]
@@ -468,7 +478,14 @@ public partial class MondayClient : IMondayClient, IDisposable
         foreach (var item in items.Select((value, i) => new { i, value }))
         {
             // Check if there is an item name.
-            if (string.IsNullOrEmpty(item.value.Name?.Text)) throw new NullReferenceException(nameof(item.value.Name));
+            if (string.IsNullOrEmpty(item.value.Name))
+            {
+                return new MondayResponse<T>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["Item Name Is Null."]
+                };
+            }
 
             // Generate a unique variable name based on the item index
             string variableName = $"columnValues{item.i}";
@@ -542,7 +559,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             parameters.Append($"${variableName}: JSON,");
 
             // Append the mutation
-            mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name.Text}\", {(group is not null ? $"group_id: $groupId_{item.i}," : "")} column_values: ${variableName}) {RESPONSE_PARAMS}");
+            mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name}\", {(group is not null ? $"group_id: $groupId_{item.i}," : "")} column_values: ${variableName}) {RESPONSE_PARAMS}");
         }
 
         // Construct the GraphQL query
@@ -572,31 +589,25 @@ public partial class MondayClient : IMondayClient, IDisposable
                 }
             }
 
-            return new Application.MondayResponse<Dictionary<ulong, T>?>()
+            return new MondayResponse<T>()
             {
                 IsSuccessful = true,
-                Response =
-                [
-                    new MondayData<Dictionary<ulong, T>?>()
-                    {
-                        Data = items.ToDictionary(x => x.Id, x => x)
-                    }
-                ]
+                Response = items.Select(x => new MondayData<T>() { Data = x }).ToList()
             };
         }
 
-        return new Application.MondayResponse<Dictionary<ulong, T>?>()
+        return new MondayResponse<T>()
         {
             IsSuccessful = false,
             Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
         };
     }
 
-    public async Task<Application.MondayResponse<Dictionary<ulong, T>?>> UpdateBoardItemsAsync<T>(
+    public async Task<Application.MondayResponse<T>> UpdateBoardItemsAsync<T>(
         ulong boardId, T[] items, CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
         // If The GraphQL Client Is Null, Return Null.
-        if (this._graphQLHttpClient == null) return new MondayResponse<Dictionary<ulong, T>?>()
+        if (this._graphQLHttpClient == null) return new MondayResponse<T>()
         {
             IsSuccessful = false,
             Errors = ["GraphQL Client Is Null."]
@@ -623,7 +634,14 @@ public partial class MondayClient : IMondayClient, IDisposable
         foreach (var item in items.Select((value, i) => new { i, value }))
         {
             // Check if there is an item name.
-            if (string.IsNullOrEmpty(item.value.Name?.Text)) throw new NullReferenceException(nameof(item.value.Name));
+            if (string.IsNullOrEmpty(item.value.Name))
+            {
+                return new MondayResponse<T>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["Item Name Is Null."]
+                };
+            }
 
             // Generate a unique variable name based on the item index
             string variableName = $"columnValues{item.i}";
@@ -701,7 +719,6 @@ public partial class MondayClient : IMondayClient, IDisposable
             }
 
             // Add the variable to the dictionary
-
             variables.Add(variableName, MondayUtilities.ToColumnValuesJson(columnValues));
 
             // Append the parameters
@@ -727,20 +744,14 @@ public partial class MondayClient : IMondayClient, IDisposable
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
         if (graphQLResponse.Errors is null && graphQLResponse.Data != null)
         {
-            return new MondayResponse<Dictionary<ulong, T>?>()
+            return new MondayResponse<T>()
             {
                 IsSuccessful = true,
-                Response =
-                [
-                    new MondayData<Dictionary<ulong, T>?>()
-                    {
-                        Data = items.ToDictionary(x => x.Id, x => x)
-                    }
-                ]
+                Response = items.Select(x => new MondayData<T>() { Data = x }).ToList()
             };
         }
 
-        return new MondayResponse<Dictionary<ulong, T>?>()
+        return new MondayResponse<T>()
         {
             IsSuccessful = false,
             Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
@@ -754,12 +765,12 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="items"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<Application.MondayResponse<Dictionary<string, Item>?>> CreateBoardItemsAsync(
+    public async Task<Application.MondayResponse<Item>> CreateBoardItemsAsync(
         ulong boardId, Item[] items, 
         CancellationToken cancellationToken = default)
     {
         // If The GraphQL Client Is Null, Return Null.
-        if (this._graphQLHttpClient == null) return new Application.MondayResponse<Dictionary<string, Item>?>()
+        if (this._graphQLHttpClient == null) return new MondayResponse<Item>()
         {
             IsSuccessful = false,
             Errors = ["GraphQL Client Is Null."]
@@ -788,7 +799,11 @@ public partial class MondayClient : IMondayClient, IDisposable
             // Check if there is an item name.
             if (string.IsNullOrEmpty(item.value.Name))
             {
-                throw new NullReferenceException(nameof(item.value.Name));
+                return new MondayResponse<Item>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["Item Name Is Null."]
+                };
             }
 
             // Generate a unique variable name based on the item index
@@ -836,20 +851,25 @@ public partial class MondayClient : IMondayClient, IDisposable
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
         if (graphQLResponse.Errors is null && graphQLResponse.Data != null)
         {
-            return new Application.MondayResponse<Dictionary<string, Item>?>()
+            // Loop through each response and assign the id to each item.
+            foreach (var item in items.Select((value, i) => new { i, value }))
+            {
+                // Attempt to get the item id.
+                if (graphQLResponse.Data.TryGetValue($"create_item_{item.i}", out Item? createdItem))
+                {
+                    // Assign the id to the item.
+                    item.value.Id = createdItem.Id;
+                }
+            }
+
+            return new MondayResponse<Item>()
             {
                 IsSuccessful = true,
-                Response =
-                [
-                    new MondayData<Dictionary<string, Item>?>()
-                    {
-                        Data = graphQLResponse.Data
-                    }
-                ]
+                Response = items.Select(x => new MondayData<Item>() { Data = x }).ToList()
             };
         }
 
-        return new Application.MondayResponse<Dictionary<string, Item>?>()
+        return new MondayResponse<Item>()
         {
             IsSuccessful = false,
             Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
@@ -960,7 +980,8 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
 
         // Execute The Query.
-        GraphQLResponse<NextItemsPageResponse> graphQLResponse = await this._graphQLHttpClient.SendQueryAsync<NextItemsPageResponse>(keyValuePairs, cancellationToken);
+        GraphQLResponse<NextItemsPageResponse> graphQLResponse = 
+            await this._graphQLHttpClient.SendQueryAsync<NextItemsPageResponse>(keyValuePairs, cancellationToken);
 
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
         if (graphQLResponse.Errors is null && graphQLResponse.Data?.NextItemsPage?.Items?.Count > 0)
@@ -1027,12 +1048,12 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="NullReferenceException"></exception>
-    public async Task<Application.MondayResponse<Dictionary<string, Update>?>> CreateItemsUpdateAsync(
+    public async Task<Application.MondayResponse<Update>> CreateItemsUpdateAsync(
         Update[] updates,
         CancellationToken cancellationToken = default)
     {
         // If The GraphQL Client Is Null, Return Null.
-        if (this._graphQLHttpClient == null) return new Application.MondayResponse<Dictionary<string, Update>?>()
+        if (this._graphQLHttpClient == null) return new Application.MondayResponse<Update>()
         {
             IsSuccessful = false,
             Errors = ["GraphQL Client Is Null."]
@@ -1054,9 +1075,13 @@ public partial class MondayClient : IMondayClient, IDisposable
         foreach (var update in updates.Select((value, i) => new { i, value }))
         {
             // Check if there is an item name.
-            if (update.value.Id.GetValueOrDefault() == 0)
+            if (update.value.ItemId.GetValueOrDefault() == 0)
             {
-                throw new NullReferenceException(nameof(update.value.Id));
+                return new MondayResponse<Update>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["Item Id Is Null."]
+                };
             }
 
             // Generate a unique variable name based on the item index
@@ -1072,7 +1097,7 @@ public partial class MondayClient : IMondayClient, IDisposable
                 parameters.Append($"${variableName}: String!,");
 
                 // Append the mutation
-                mutation.Append($"create_update_{update.i}: create_update(item_id: {update.value.Id}, body: ${variableName}) {RESPONSE_PARAMS}");
+                mutation.Append($"create_update_{update.i}: create_update(item_id: {update.value.ItemId}, body: ${variableName}) {RESPONSE_PARAMS}");
             }
         }
 
@@ -1092,21 +1117,25 @@ public partial class MondayClient : IMondayClient, IDisposable
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
         if (graphQLResponse.Errors is null && graphQLResponse.Data != null)
         {
-            return new Application.MondayResponse<Dictionary<string, Update>?>()
+            // Loop through each response and assign the id to each item.
+            foreach (var update in updates.Select((value, i) => new { i, value }))
+            {
+                // Attempt to get the item id.
+                if (graphQLResponse.Data.TryGetValue($"create_update_{update.i}", out Update? createdUpdate))
+                {
+                    // Assign the id to the item.
+                    update.value.Id = createdUpdate.Id;
+                }
+            }
+
+            return new MondayResponse<Update>()
             {
                 IsSuccessful = true,
-                Response =
-                [
-                    new MondayData<Dictionary<string, Update>?>()
-                    {
-                        Data = graphQLResponse.Data
-                    }
-                ]
+                Response = updates.Select(x => new MondayData<Update>() { Data = x }).ToList()
             };
         }
 
-        // Return Null.
-        return new Application.MondayResponse<Dictionary<string, Update>?>()
+        return new MondayResponse<Update>()
         {
             IsSuccessful = false,
             Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
@@ -1120,12 +1149,12 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="NullReferenceException"></exception>
-    public async Task<Application.MondayResponse<Dictionary<string, Item>?>> DeleteItemsAsync(
+    public async Task<Application.MondayResponse<Item>> DeleteItemsAsync(
         Item[] items,
         CancellationToken cancellationToken = default)
     {
         // If The GraphQL Client Is Null, Return Null.
-        if (this._graphQLHttpClient == null) return new Application.MondayResponse<Dictionary<string, Item>?>()
+        if (this._graphQLHttpClient == null) return new Application.MondayResponse<Item>()
         {
             IsSuccessful = false,
             Errors = ["GraphQL Client Is Null."]
@@ -1181,31 +1210,17 @@ public partial class MondayClient : IMondayClient, IDisposable
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
         if (graphQLResponse.Errors is null && graphQLResponse.Data != null)
         {
-            return new Application.MondayResponse<Dictionary<string, Item>?>()
+            return new MondayResponse<Item>()
             {
                 IsSuccessful = true,
-                Response = [
-                    new MondayData<Dictionary<string, Item>?>()
-                    {
-                        Data = graphQLResponse.Data
-                    }
-                ]
-            };
-        }
-        else if (graphQLResponse.Errors is not null)
-        {
-            return new Application.MondayResponse<Dictionary<string, Item>?>()
-            {
-                IsSuccessful = false,
-                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+                Response = items.Select(x => new MondayData<Item>() { Data = x }).ToList()
             };
         }
 
-        // Return Null.
-        return new Application.MondayResponse<Dictionary<string, Item>?>()
+        return new MondayResponse<Item>()
         {
             IsSuccessful = false,
-            Errors = []
+            Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
         };
     }
 
@@ -1215,7 +1230,7 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="limit"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<Application.MondayResponse<List<Board>>> GetBoardsAsync(
+    public async Task<Application.MondayResponse<Board>> GetBoardsAsync(
         ulong[]? boardIds = null,
         int limit = 10,
         CancellationToken cancellationToken = default)
@@ -1223,7 +1238,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         // If The GraphQL Client Is Null, Return Null.
         if (this._graphQLHttpClient == null)
         {
-            return new Application.MondayResponse<List<Board>>()
+            return new MondayResponse<Board>()
             {
                 IsSuccessful = false,
                 Errors = ["GraphQL Client Is Null."]
@@ -1270,31 +1285,21 @@ public partial class MondayClient : IMondayClient, IDisposable
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
         if (graphQLResponse.Errors is null && graphQLResponse.Data?.Boards?.Count > 0)
         {
-            return new Application.MondayResponse<List<Board>>()
+            return new Application.MondayResponse<Board>()
             {
                 IsSuccessful = true,
-                Response = [
-                    new MondayData<List<Board>>()
-                    {
-                        Data = graphQLResponse.Data.Boards
-                    }
-                ]
-            };
-        }
-        else if (graphQLResponse.Errors is not null)
-        {
-            return new Application.MondayResponse<List<Board>>()
-            {
-                IsSuccessful = false,
-                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+                Response = graphQLResponse.Data.Boards.Select(x => new MondayData<Board>()
+                {
+                    Data = x
+                })
+                .ToList()
             };
         }
 
-        // Return Null.
-        return new Application.MondayResponse<List<Board>>()
+        return new MondayResponse<Board>()
         {
             IsSuccessful = false,
-            Errors = []
+            Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
         };
     }
 
@@ -1304,14 +1309,14 @@ public partial class MondayClient : IMondayClient, IDisposable
     /// <param name="updates"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<Application.MondayResponse<Dictionary<string, Asset>>> UploadFileToUpdateAsync(
+    public async Task<Application.MondayResponse<Asset>> UploadFileToUpdateAsync(
         Update[] updates,
         CancellationToken cancellationToken = default)
     {
         // If The GraphQL Client Is Null, Return Null.
         if (this._graphQLHttpClient == null)
         {
-            return new Application.MondayResponse<Dictionary<string, Asset>>()
+            return new Application.MondayResponse<Asset>()
             {
                 IsSuccessful = false,
                 Errors = ["GraphQL Client Is Null."]
@@ -1333,12 +1338,12 @@ public partial class MondayClient : IMondayClient, IDisposable
         foreach (var update in updates.Select((value, i) => new { i, value }))
         {
             // Check if there is an item name.
-            if (update.value.Id.GetValueOrDefault() == 0)
+            if (update.value.ItemId.GetValueOrDefault() == 0)
             {
-                return new Application.MondayResponse<Dictionary<string, Asset>>()
+                return new MondayResponse<Asset>()
                 {
                     IsSuccessful = false,
-                    Errors = ["Update Id Is Null."]
+                    Errors = ["Item Id Is Null."]
                 };
             }
 
@@ -1358,7 +1363,7 @@ public partial class MondayClient : IMondayClient, IDisposable
                 multipartFormDataContent.Add(update.value.FileUpload.StreamContent, $"variables[{variableName}]", update.value.FileUpload.FileName);
 
                 // Add the update id to the dictionary
-                multipartFormDataContent.Add(new StringContent(update.value.Id.GetValueOrDefault().ToString()), $"variables[updateId{update.i}]");
+                multipartFormDataContent.Add(new StringContent(update.value.ItemId.GetValueOrDefault().ToString()), $"variables[updateId{update.i}]");
             }
         }
 
@@ -1382,41 +1387,41 @@ public partial class MondayClient : IMondayClient, IDisposable
         if (httpResponseMessage.IsSuccessStatusCode 
             && jsonDocument.RootElement.TryGetProperty("data", out JsonElement data))
         {
-            Application.MondayResponse<Dictionary<string, Asset>> response = new()
+            Application.MondayResponse<Asset> response = new()
             {
                 IsSuccessful = true,
                 Response = []
             };
 
             // Loop through each property
-            foreach (JsonProperty property in data.EnumerateObject())
+            foreach (var property in data.EnumerateObject().Select((value, i) => new { i, value }))
             {
                 // Check if the property is an object
-                if (property.Value.ValueKind == JsonValueKind.Object)
+                if (property.value.Value.ValueKind == JsonValueKind.Object)
                 {
                     // Converstion was created with the Newtonsoft
-                    Asset? asset = Newtonsoft.Json.JsonConvert.DeserializeObject<Asset>(property.Value.GetRawText());
+                    Asset? asset = Newtonsoft.Json.JsonConvert.DeserializeObject<Asset>(property.value.Value.GetRawText());
 
                     // Check if the asset is not null
                     if (asset is not null)
                     {
-                        response.Response.Add(new MondayData<Dictionary<string, Asset>>()
+                        // Assign The item id to the asset.
+                        asset.ItemId = updates[property.i].ItemId.GetValueOrDefault();
+
+                        // Add the asset to the response
+                        response.Response?.Add(new MondayData<Asset>()
                         {
-                            Data = new Dictionary<string, Asset>()
-                            {
-                                { property.Name, asset }
-                            }  
+                            Data = asset
                         });
                     }
                 }
             }
-
             return response;
         }
         else
         {
             // Create the response
-            Application.MondayResponse<Dictionary<string, Asset>> response = new()
+            Application.MondayResponse<Asset> response = new()
             {
                 IsSuccessful = false
             };
@@ -1445,13 +1450,13 @@ public partial class MondayClient : IMondayClient, IDisposable
         }
     }
 
-    public async Task<Application.MondayResponse<Dictionary<string, Asset>>> UploadFileToColumnAsync(
+    public async Task<Application.MondayResponse<Asset>> UploadFileToColumnAsync(
         Item[] items, CancellationToken cancellationToken = default)
     {
         // If The GraphQL Client Is Null, Return Null.
         if (this._graphQLHttpClient == null)
         {
-            return new Application.MondayResponse<Dictionary<string, Asset>>()
+            return new MondayResponse<Asset>()
             {
                 IsSuccessful = false,
                 Errors = ["GraphQL Client Is Null."]
@@ -1476,7 +1481,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             // Check if there is an item name.
             if (item.value.Id == 0)
             {
-                return new Application.MondayResponse<Dictionary<string, Asset>>()
+                return new MondayResponse<Asset>()
                 {
                     IsSuccessful = false,
                     Errors = ["Item Id Is Null."]
@@ -1486,7 +1491,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             // Check if there is a file upload
             if (item.value.FileUpload is null)
             {
-                return new Application.MondayResponse<Dictionary<string, Asset>>()
+                return new MondayResponse<Asset>()
                 {
                     IsSuccessful = false,
                     Errors = ["File Upload Is Null."]
@@ -1532,31 +1537,31 @@ public partial class MondayClient : IMondayClient, IDisposable
         // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
         if (httpResponseMessage.IsSuccessStatusCode && jsonDocument.RootElement.TryGetProperty("data", out JsonElement data))
         {
-            Application.MondayResponse<Dictionary<string, Asset>> response = new()
+            Application.MondayResponse<Asset> response = new()
             {
                 IsSuccessful = true,
                 Response = []
             };
 
             // Loop through each property
-            foreach (JsonProperty property in data.EnumerateObject())
+            foreach (var property in data.EnumerateObject().Select((value, i) => new { i, value }))
             {
                 // Check if the property is an object
-                if (property.Value.ValueKind == JsonValueKind.Object)
+                if (property.value.Value.ValueKind == JsonValueKind.Object)
                 {
                     // Converstion was created with the Newtonsoft
-                    Asset? asset = Newtonsoft.Json.JsonConvert.DeserializeObject<Asset>(property.Value.GetRawText());
+                    Asset? asset = Newtonsoft.Json.JsonConvert.DeserializeObject<Asset>(property.value.Value.GetRawText());
 
                     // Check if the asset is not null
                     if (asset is not null)
                     {
+                        // Assign The item id to the asset.
+                        asset.ItemId = items[property.i].Id;
+
                         // Add the asset to the response
-                        response.Response?.Add(new MondayData<Dictionary<string, Asset>>()
+                        response.Response?.Add(new MondayData<Asset>()
                         {
-                            Data = new Dictionary<string, Asset>()
-                            {
-                                { property.Name, asset }
-                            }
+                            Data = asset
                         });
                     }
                 }
@@ -1566,7 +1571,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         else
         {
             // Create the response
-            Application.MondayResponse<Dictionary<string, Asset>> response = new()
+            Application.MondayResponse<Asset> response = new()
             {
                 IsSuccessful = false
             };
