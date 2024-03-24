@@ -419,6 +419,16 @@ public partial class MondayClient : IMondayClient, IDisposable
 
             return mondayResponse;
         }
+        else if (graphQLResponse.Errors is null
+            && graphQLResponse.Data?.Boards?.Count > 0
+            && graphQLResponse.Data?.Boards?.Any(x => x.ItemsCount == 0) == true)
+        {
+            return new MondayResponse<T>()
+            {
+                IsSuccessful = true,
+                Errors = ["No Items Found."],
+            };
+        }
         else if (graphQLResponse.Errors is not null)
         {
             return new Application.MondayResponse<T>()
@@ -468,7 +478,14 @@ public partial class MondayClient : IMondayClient, IDisposable
         foreach (var item in items.Select((value, i) => new { i, value }))
         {
             // Check if there is an item name.
-            if (string.IsNullOrEmpty(item.value.Name?.Text)) throw new NullReferenceException(nameof(item.value.Name));
+            if (string.IsNullOrEmpty(item.value.Name))
+            {
+                return new MondayResponse<T>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["Item Name Is Null."]
+                };
+            }
 
             // Generate a unique variable name based on the item index
             string variableName = $"columnValues{item.i}";
@@ -542,7 +559,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             parameters.Append($"${variableName}: JSON,");
 
             // Append the mutation
-            mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name.Text}\", {(group is not null ? $"group_id: $groupId_{item.i}," : "")} column_values: ${variableName}) {RESPONSE_PARAMS}");
+            mutation.Append($"create_item_{item.i}: create_item(board_id: $boardId, item_name: \"{item.value.Name}\", {(group is not null ? $"group_id: $groupId_{item.i}," : "")} column_values: ${variableName}) {RESPONSE_PARAMS}");
         }
 
         // Construct the GraphQL query
@@ -617,7 +634,14 @@ public partial class MondayClient : IMondayClient, IDisposable
         foreach (var item in items.Select((value, i) => new { i, value }))
         {
             // Check if there is an item name.
-            if (string.IsNullOrEmpty(item.value.Name?.Text)) throw new NullReferenceException(nameof(item.value.Name));
+            if (string.IsNullOrEmpty(item.value.Name))
+            {
+                return new MondayResponse<T>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["Item Name Is Null."]
+                };
+            }
 
             // Generate a unique variable name based on the item index
             string variableName = $"columnValues{item.i}";

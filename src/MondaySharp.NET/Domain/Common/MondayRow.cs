@@ -9,5 +9,5 @@ public record MondayRow
     public ulong Id { get; set; }
 
     [MondayColumnHeader("name")]
-    public ColumnText? Name { get; set; }
+    public string? Name { get; set; }
 }

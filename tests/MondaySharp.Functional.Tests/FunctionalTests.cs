@@ -126,7 +126,18 @@ public class FunctionalTests
         ];
 
         // Act
-        NET.Application.MondayResponse<TestRowWithAssets> mondayResponses = await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, limit: 500);
+        await this.MondayClient!.CreateBoardItemsAsync<TestRowWithAssets>(BoardId, [new TestRowWithAssets()
+        {
+            Name = "Test Item 1",
+            Text = new ColumnText()
+            {
+                Id = "text0",
+                Text = "Andrew Eberle"
+            }
+        }]);
+
+        NET.Application.MondayResponse<TestRowWithAssets> mondayResponses = 
+            await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, columnValues);
 
         // Assert
         Assert.IsTrue(mondayResponses.Response?.Count > 0);
@@ -760,10 +771,7 @@ public class FunctionalTests
         // Arrange
         TestRow testRow = new()
         {
-            Name = new ColumnText()
-            {
-                Text = "Test Item 1"
-            },
+            Name = "Test Item 1",
             Text = new ColumnText()
             {
                 Text = "Andrew Eberle"
@@ -827,6 +835,7 @@ public class FunctionalTests
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
         Assert.IsNull(mondayResponse.Errors);
     }
 
@@ -836,10 +845,7 @@ public class FunctionalTests
         // Arrange
         TestRow testRow = new()
         {
-            Name = new ColumnText()
-            {
-                Text = "Test Item 1"
-            },
+            Name = "Test Item 1",
             Text = new ColumnText()
             {
                 Text = "Andrew Eberle"
@@ -902,6 +908,7 @@ public class FunctionalTests
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
         Assert.IsNull(mondayResponse.Errors);
 
         // Change The Text
@@ -918,7 +925,7 @@ public class FunctionalTests
         testRow.Timeline = null;
         testRow.Tags = null;
         testRow.Rating = null;
-        testRow.Name.Text = "Updated Item";
+        testRow.Name = "Updated Item";
             
         // Attempt To Update The Item.
         mondayResponse = await this.MondayClient!.UpdateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
@@ -926,6 +933,7 @@ public class FunctionalTests
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
         Assert.IsNull(mondayResponse.Errors);
     }
 
