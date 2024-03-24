@@ -9,6 +9,8 @@ public record Asset
     [JsonConverter(typeof(StringToULongJsonConverter))]
     public ulong? Id { get; set; }
 
+    public ulong? ItemId { get; set; }
+
     [JsonProperty("name")]
     public string? Name { get; set; }
 
