@@ -675,7 +675,7 @@ public class FunctionalTests
 
         Update? update = Newtonsoft.Json.JsonConvert.DeserializeObject<Update>(DATA);
         Assert.IsNotNull(update);
-        Assert.IsTrue(update?.Id == 1187128743);
+        Assert.IsTrue(update?.i == 1187128743);
     }
 
     [TestMethod]
@@ -944,12 +944,11 @@ public class FunctionalTests
         NET.Application.MondayResponse<TestRow> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId);
 
         // Delete All Items
-        await this.MondayClient!.DeleteItemsAsync([.. items.Response.Select(x => new Item()
+        await this.MondayClient!.DeleteItemsAsync([.. items.Response?.Select(x => new Item()
         {
             Id = x.Data!.Id
         })]);
     }
-
     public record TestRowWithGroup : TestRow
     {
         public Group? Group { get; set; }

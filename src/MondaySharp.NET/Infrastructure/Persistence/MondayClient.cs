@@ -247,19 +247,11 @@ public partial class MondayClient : IMondayClient, IDisposable
 
             return mondayResponse;
         }
-        else if (graphQLResponse.Errors is not null)
-        {
-            return new Application.MondayResponse<T>()
-            {
-                IsSuccessful = false,
-                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
-            };
-        }
 
         return new Application.MondayResponse<T>()
         {
             IsSuccessful = false,
-            Errors = []
+            Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
         };
     }
 
@@ -429,20 +421,11 @@ public partial class MondayClient : IMondayClient, IDisposable
                 Errors = ["No Items Found."],
             };
         }
-        else if (graphQLResponse.Errors is not null)
-        {
-            return new Application.MondayResponse<T>()
-            {
-                IsSuccessful = false,
-                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet(),
-                Response = null
-            };
-        }
 
         return new Application.MondayResponse<T>()
         {
             IsSuccessful = false,
-            Errors = [],
+            Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet(),
             Response = null
         };
     }
@@ -1025,19 +1008,11 @@ public partial class MondayClient : IMondayClient, IDisposable
 
             return mondayResponse;
         }
-        else if (graphQLResponse.Errors is not null)
-        {
-            return new Application.MondayResponse<T>()
-            {
-                IsSuccessful = false,
-                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
-            };
-        }
 
         return new Application.MondayResponse<T>()
         {
             IsSuccessful = false,
-            Errors = []
+            Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
         };
     }
 
@@ -1696,19 +1671,11 @@ public partial class MondayClient : IMondayClient, IDisposable
                 }
             }
         }
-        else if (graphQLResponse.Errors is not null)
-        {
-            return new MondayResponse<T>()
-            {
-                IsSuccessful = false,
-                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
-            };
-        }
 
         return new MondayResponse<T>()
         {
             IsSuccessful = false,
-            Errors = []
+            Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
         };
     }
 }
