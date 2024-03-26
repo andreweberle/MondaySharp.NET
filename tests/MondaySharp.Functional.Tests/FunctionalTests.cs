@@ -675,7 +675,7 @@ public class FunctionalTests
 
         Update? update = Newtonsoft.Json.JsonConvert.DeserializeObject<Update>(DATA);
         Assert.IsNotNull(update);
-        Assert.IsTrue(update?.i == 1187128743);
+        Assert.IsTrue(update?.Id == 1187128743);
     }
 
     [TestMethod]
