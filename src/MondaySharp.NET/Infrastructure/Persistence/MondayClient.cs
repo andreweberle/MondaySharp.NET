@@ -586,6 +586,154 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
     }
 
+    public async Task<Application.MondayResponse<T>> CreateBoardSubItemsAsync<T>(
+        ulong parentItemId, T[] subItems, CancellationToken cancellationToken = default) where T : MondayRow, new()
+    {
+        // If The GraphQL Client Is Null, Return Null.
+        if (this._graphQLHttpClient == null) return new MondayResponse<T>()
+        {
+            IsSuccessful = false,
+            Errors = ["GraphQL Client Is Null."]
+        };
+
+        // Check if the parent item id is null.
+        if (parentItemId == 0)
+        {
+            return new MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["Parent Item Id Is Not Valid."]
+            };
+        }
+
+        // Create The Response Parameters.
+        const string RESPONSE_PARAMS = @$"{{id name}}";
+
+        // Create parameters for the query
+        StringBuilder parameters = new();
+
+        // Create the mutation
+        StringBuilder mutation = new();
+
+        // Append the parameters
+        parameters.Append("$parentItemId: ID!,");
+
+        // Create a dictionary to store variables dynamically
+        Dictionary<string, object> variables = new()
+        {
+            { "parentItemId", parentItemId }
+        };
+
+        foreach (var item in subItems.Select((value, i) => new { i, value }))
+        {
+            // Check if there is an item name.
+            if (string.IsNullOrEmpty(item.value.Name))
+            {
+                return new MondayResponse<T>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["Item Name Is Null."]
+                };
+            }
+
+            // Generate a unique variable name based on the item index
+            string variableName = $"columnValues{item.i}";
+
+            // Check if the column values are null
+            List<ColumnBaseType> columnValues = [];
+
+            // Foreach property in the item
+            foreach (PropertyInfo propertyInfo in item.value.GetType().GetProperties()
+                 .Where(x => x.GetCustomAttribute<MondayColumnTypeUnsupportedWriteAttribute>() == null))
+            {
+                // Skip the name property.
+                if (propertyInfo.Name == nameof(item.value.Name)) continue;
+
+                // Skip the id property.
+                if (propertyInfo.Name == nameof(item.value.Id)) continue;
+
+                // Check if the property is a ColumnBaseType
+                if (propertyInfo.PropertyType.IsSubclassOf(typeof(Domain.ColumnTypes.ColumnBaseType)))
+                {
+                    // Get the column base type
+                    ColumnBaseType? columnBaseType = (ColumnBaseType?)propertyInfo.GetValue(item.value);
+
+                    // Check if the column base type is not null
+                    if (columnBaseType is not null)
+                    {
+                        // Check there is an id.
+                        if (string.IsNullOrEmpty(columnBaseType.Id))
+                        {
+                            // Check if there is an attribute.
+                            if (propertyInfo.GetCustomAttribute<MondayColumnHeaderAttribute>() is not null)
+                            {
+                                // Set the id to the attribute id.
+                                columnBaseType.Id = propertyInfo.GetCustomAttribute<MondayColumnHeaderAttribute>()!.ColumnId;
+                            }
+                            else
+                            {
+                                // Use the property name as the id.
+                                columnBaseType.Id = propertyInfo.Name;
+                            }
+                        }
+
+                        // Add the column base type to the list
+                        columnValues.Add(columnBaseType);
+                    }
+                }
+            }
+
+            // Add the variable to the dictionary
+            variables.Add(variableName, MondayUtilities.ToColumnValuesJson(columnValues));
+
+            // Append the parameters
+            parameters.Append($"${variableName}: JSON,");
+
+            // Append the mutation
+            mutation.Append($" create_subitem_{item.i}:  create_subitem(parent_item_id: $parentItemId, item_name: \"{item.value.Name}\", column_values: ${variableName}) {RESPONSE_PARAMS}");
+        }
+
+        // Construct the GraphQL query
+        GraphQLRequest keyValuePairs = new()
+        {
+            Query = $@"mutation ({parameters}) {{
+                {mutation}
+            }}",
+            Variables = variables
+        };
+
+        // Execute The Query.
+        GraphQLResponse<Dictionary<string, Item>> graphQLResponse =
+            await this._graphQLHttpClient.SendMutationAsync<Dictionary<string, Item>>(keyValuePairs, cancellationToken);
+
+        // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
+        if (graphQLResponse.Errors is null && graphQLResponse.Data != null)
+        {
+            // Loop through each response and assign the id to each item.
+            foreach (var item in subItems.Select((value, i) => new { i, value }))
+            {
+                // Attempt to get the item id.
+                if (graphQLResponse.Data.TryGetValue($"create_subitem_{item.i}", out Item? createdItem))
+                {
+                    // Assign the id to the item.
+                    item.value.Id = createdItem.Id;
+                }
+            }
+
+            return new MondayResponse<T>()
+            {
+                IsSuccessful = true,
+                Response = subItems.Select(x => new MondayData<T>() { Data = x }).ToList()
+            };
+        }
+
+        return new MondayResponse<T>()
+        {
+            IsSuccessful = false,
+            Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+        };
+    }
+
     public async Task<Application.MondayResponse<T>> UpdateBoardItemsAsync<T>(
         ulong boardId, T[] items, CancellationToken cancellationToken = default) where T : MondayRow, new()
     {
@@ -849,6 +997,120 @@ public partial class MondayClient : IMondayClient, IDisposable
             {
                 IsSuccessful = true,
                 Response = items.Select(x => new MondayData<Item>() { Data = x }).ToList()
+            };
+        }
+
+        return new MondayResponse<Item>()
+        {
+            IsSuccessful = false,
+            Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+        };
+    }
+
+    public async Task<Application.MondayResponse<Item>> CreateBoardSubItemsAsync(
+        ulong parentItemId, Item[] subItems,
+        CancellationToken cancellationToken = default)
+    {
+        // If The GraphQL Client Is Null, Return Null.
+        if (this._graphQLHttpClient == null) return new MondayResponse<Item>()
+        {
+            IsSuccessful = false,
+            Errors = ["GraphQL Client Is Null."]
+        };
+
+        // Check if the parent item id is null.
+        if (parentItemId == 0)
+        {
+            return new MondayResponse<Item>()
+            {
+                IsSuccessful = false,
+                Errors = ["Parent Item Id Is Not Valid."]
+            };
+        }
+
+        // Create The Response Parameters.
+        const string RESPONSE_PARAMS = @$"{{id name}}";
+
+        // Create parameters for the query
+        StringBuilder parameters = new();
+
+        // Create the mutation
+        StringBuilder mutation = new();
+
+        // Append the parameters
+        parameters.Append("$parentItemId: ID!,");
+
+        // Create a dictionary to store variables dynamically
+        Dictionary<string, object> variables = new()
+        {
+            { "parentItemId", parentItemId }
+        };
+
+        foreach (var item in subItems.Select((value, i) => new { i, value }))
+        {
+            // Check if there is an item name.
+            if (string.IsNullOrEmpty(item.value.Name))
+            {
+                return new MondayResponse<Item>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["Item Name Is Null."]
+                };
+            }
+
+            // Generate a unique variable name based on the item index
+            string variableName = $"columnValues{item.i}";
+
+            // Check if the column values are null
+            if (item.value.ColumnValues is not null && item.value.ColumnValues is { Count: > 0 })
+            {
+                // Add the variable to the dictionary
+                variables.Add(variableName, MondayUtilities.ToColumnValuesJson(item.value.ColumnValues.Select(x => x.ColumnBaseType).ToList()!));
+
+                // Append the parameters
+                parameters.Append($"${variableName}: JSON,");
+
+                // Append the mutation
+                mutation.Append($" create_subitem_{item.i}:  create_subitem(parent_item_id: $parentItemId, item_name: \"{item.value.Name}\", column_values: ${variableName}) {RESPONSE_PARAMS}");
+            }
+            else
+            {
+                // Append the mutation
+                mutation.Append($" create_subitem_{item.i}:  create_subitem(parent_item_id: $parentItemId, item_name: \"{item.value.Name}\") {RESPONSE_PARAMS}");
+            }
+        }
+
+        // Construct the GraphQL query
+        GraphQLRequest keyValuePairs = new()
+        {
+            Query = $@"mutation ({parameters}) {{
+                {mutation}
+            }}",
+            Variables = variables
+        };
+
+        // Execute The Query.
+        GraphQLResponse<Dictionary<string, Item>> graphQLResponse =
+            await this._graphQLHttpClient.SendMutationAsync<Dictionary<string, Item>>(keyValuePairs, cancellationToken);
+
+        // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
+        if (graphQLResponse.Errors is null && graphQLResponse.Data != null)
+        {
+            // Loop through each response and assign the id to each item.
+            foreach (var item in subItems.Select((value, i) => new { i, value }))
+            {
+                // Attempt to get the item id.
+                if (graphQLResponse.Data.TryGetValue($"create_subitem_{item.i}", out Item? createdItem))
+                {
+                    // Assign the id to the item.
+                    item.value.Id = createdItem.Id;
+                }
+            }
+
+            return new MondayResponse<Item>()
+            {
+                IsSuccessful = true,
+                Response = subItems.Select(x => new MondayData<Item>() { Data = x }).ToList()
             };
         }
 

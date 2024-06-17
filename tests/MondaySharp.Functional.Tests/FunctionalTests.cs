@@ -938,6 +938,248 @@ public class FunctionalTests
     }
 
     [TestMethod]
+    public async Task CreateSubItemsGeneric_Should_Be_Ok()
+    {
+        // Arrange
+        TestRow testRow = new()
+        {
+            Name = "Test Item 1",
+            Text = new ColumnText()
+            {
+                Text = "Andrew Eberle"
+            },
+            Number = new ColumnNumber()
+            {
+                Number = 10
+            },
+            Email = new ColumnEmail()
+            {
+                Email = "andrew.eberle@lithocraft.com.au"
+            },
+            Rating = new ColumnRating()
+            {
+                Rating = MondayRating.Five
+            },
+            Checkbox = new ColumnCheckBox()
+            {
+                IsChecked = true
+            },
+            Date = new ColumnDateTime()
+            {
+                Date = new DateTime(2023, 11, 29)
+            },
+            Dropdown = new ColumnDropDown()
+            {
+                Label = "Hello"
+            },
+            LongText = new ColumnLongText()
+            {
+                Text = "Hello, World!"
+            },
+            Link = new ColumnLink()
+            {
+                Text = "Google",
+                Uri = new Uri("https://www.google.com")
+            },
+            Priority = new ColumnStatus()
+            {
+                Status = "High"
+            },
+            Status = new ColumnStatus()
+            {
+                Status = "Done"
+            },
+            Timeline = new ColumnTimeline()
+            {
+                From = new DateTime(2023, 11, 29),
+                To = new DateTime(2023, 12, 29)
+            },
+            Tags = new ColumnTag()
+            {
+                TagIds = [21057674, 21057675]
+            }
+        };
+
+        // Act
+        NET.Application.MondayResponse<TestRow> mondayResponse =
+            await this.MondayClient!.CreateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
+        Assert.IsNull(mondayResponse.Errors);
+
+        // Arrange
+        TestSubRow testSubRow0 = new()
+        {
+            Name = "Test Sub Item 1",
+
+            Status = new ColumnText()
+            {
+                Text = "Andrew Eberle"
+            },
+            DueDate = new ColumnDateTime()
+            {
+                Date = new DateTime(2023, 11, 29)
+            },
+            Priority = new ColumnNumber()
+            {
+                Number = 10
+            }
+        };
+
+        // Arrange
+        TestSubRow testSubRow1 = new()
+        {
+            Name = "Test Sub Item 2",
+
+            Status = new ColumnText()
+            {
+                Text = "Andrew Eberle"
+            },
+            DueDate = new ColumnDateTime()
+            {
+                Date = new DateTime(2023, 11, 29)
+            },
+            Priority = new ColumnNumber()
+            {
+                Number = 10
+            }
+        };
+
+        // Act
+        NET.Application.MondayResponse<TestSubRow> mondayResponseSubRow = 
+            await this.MondayClient!.CreateBoardSubItemsAsync<TestSubRow>(
+                mondayResponse.Response?.FirstOrDefault()?.Data?.Id ?? 0, [testSubRow0, testSubRow1]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseSubRow.IsSuccessful);
+        Assert.IsTrue(mondayResponseSubRow.Response?.Count == 2);
+        Assert.IsTrue(mondayResponseSubRow.Response?.FirstOrDefault()?.Data?.Name == testSubRow0.Name);
+        Assert.IsTrue(mondayResponseSubRow.Response?.LastOrDefault()?.Data?.Name == testSubRow1.Name);
+        Assert.IsTrue(mondayResponseSubRow.Response?.LastOrDefault()?.Data?.Id > mondayResponseSubRow.Response?.FirstOrDefault()?.Data?.Id);
+        Assert.IsNull(mondayResponseSubRow.Errors);
+    }
+
+    [TestMethod]
+    public async Task CreateSubItems_Should_Be_Ok()
+    {
+        // Arrange
+        Item item = new()
+        {
+            Name = "Test Item 1",
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text0",
+                        Text = "Andrew Eberle"
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnNumber()
+                    {
+                        Id = "numbers9",
+                        Number = 10
+                    },
+                },
+            ]
+        };
+
+        // Create the item
+        NET.Application.MondayResponse<Item> mondayResponseCreate = 
+            await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseCreate.IsSuccessful);
+        Assert.IsNull(mondayResponseCreate.Errors);
+        Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.Name == item.Name);
+
+        // Arrange
+        Item subItem1 = new()
+        {
+            Name = "Test Sub Item 1",
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "status__1",
+                        Text = "Andrew Eberle"
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnDateTime()
+                    {
+                        Id = "date6",
+                        Date = new DateTime(2023, 11, 29)
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnNumber()
+                    {
+                        Id = "numbers8",
+                        Number = 10
+                    },
+                },
+            ]
+        };
+
+        // Arrange
+        Item subItem2 = new()
+        {
+            Name = "Test Sub Item 2",
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "status__1",
+                        Text = "Andrew Eberle"
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnDateTime()
+                    {
+                        Id = "date6",
+                        Date = new DateTime(2023, 11, 29)
+                    },
+                },
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnNumber()
+                    {
+                        Id = "numbers8",
+                        Number = 10
+                    },
+                },
+            ]
+        };
+
+        // Act
+        NET.Application.MondayResponse<Item> mondayResponseSubItem = 
+            await this.MondayClient!.CreateBoardSubItemsAsync(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.Id ?? 0, 
+            [subItem1, subItem2]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseSubItem.IsSuccessful);
+        Assert.IsTrue(mondayResponseSubItem.Response?.Count == 2);
+        Assert.IsTrue(mondayResponseSubItem.Response?.FirstOrDefault()?.Data?.Name == subItem1.Name);
+        Assert.IsTrue(mondayResponseSubItem.Response?.LastOrDefault()?.Data?.Name == subItem2.Name);
+        Assert.IsTrue(mondayResponseSubItem.Response?.LastOrDefault()?.Data?.Id > mondayResponseSubItem.Response?.FirstOrDefault()?.Data?.Id);
+        Assert.IsNull(mondayResponseSubItem.Errors);
+    }
+
+    [TestMethod]
     public async Task ZZZCleanup()
     {
         // Get All Items
@@ -949,6 +1191,7 @@ public class FunctionalTests
             Id = x.Data!.Id
         })]);
     }
+      
     public record TestRowWithGroup : TestRow
     {
         public Group? Group { get; set; }
@@ -1011,5 +1254,16 @@ public class FunctionalTests
         public ColumnText? Text { get; set; }
 
         public Group? Group { get; set; }
+    }
+    public record TestSubRow : MondayRow
+    {
+        [MondayColumnHeader("status__1")]
+        public ColumnText? Status { get; set; }
+
+        [MondayColumnHeader("date6")]
+        public ColumnDateTime? DueDate { get; set; }
+
+        [MondayColumnHeader("numbers8")]
+        public ColumnNumber? Priority { get; set; }
     }
 }
