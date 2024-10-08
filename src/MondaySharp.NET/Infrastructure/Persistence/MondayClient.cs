@@ -764,16 +764,6 @@ public partial class MondayClient : IMondayClient, IDisposable
 
         foreach (var item in items.Select((value, i) => new { i, value }))
         {
-            // Check if there is an item name.
-            if (string.IsNullOrEmpty(item.value.Name))
-            {
-                return new MondayResponse<T>()
-                {
-                    IsSuccessful = false,
-                    Errors = ["Item Name Is Null."]
-                };
-            }
-
             // Generate a unique variable name based on the item index
             string variableName = $"columnValues{item.i}";
 
