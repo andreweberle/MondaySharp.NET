@@ -30,4 +30,14 @@ public record ColumnFile : ColumnBaseType
             }
         }
     }
+    public override string ToString()
+    {
+        if (PrivateFileUrls == null || PrivateFileUrls.Length == 0)
+        {
+            return $"\"{this.Id}\" : {{\"PrivateFileUrls\":[]}}";
+        }
+
+        return $"\"{this.Id}\" : {{\"PrivateFileUrls\":[\"{string.Join(",", this.PrivateFileUrls.Select(label => $"\"{label}\""))}\"]}}";
+    }
+
 }
