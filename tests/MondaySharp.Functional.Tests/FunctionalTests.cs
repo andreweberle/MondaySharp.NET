@@ -10,7 +10,10 @@ using MondaySharp.NET.Domain.Common.Enums;
 using MondaySharp.NET.Infrastructure.Extensions;
 using MondaySharp.NET.Infrastructure.Persistence;
 using MondaySharp.NET.Infrastructure.Utilities;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using static MondaySharp.Functional.Tests.FunctionalTests;
 
 namespace MondaySharp.Functional.Tests;
 
@@ -1191,7 +1194,432 @@ public class FunctionalTests
             Id = x.Data!.Id
         })]);
     }
-      
+
+    // Create Item Using Item Object
+    [TestMethod]
+    public async Task TestBoard_CreateItem_Should_Be_Ok()
+    {
+        // Arrange
+        Item item = new()
+        {
+            Name = "Test Item Create 2",
+            Group = new Group()
+            {
+                Id = "topics"
+            },
+            ColumnValues =
+            [
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnText()
+                 {
+                     Id = "text__1",
+                     Text = "FROM UNIT TEST"
+                 },
+             },
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnStatus()
+                 {
+                     Id = "status",
+                     StatusId = 1
+                 },
+             },
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnDateTime()
+                 {
+                     Id = "date4",
+                    Date = DateTime.Now
+                 },
+             },
+
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnDropDown()
+                 {
+                     Id = "dropdown__1",
+                    LabelId = 1
+                 },
+             },
+            ]
+        };
+
+        // Act
+        NET.Application.MondayResponse<Item> mondayResponse =
+            await this.MondayClient!.CreateBoardItemsAsync(7576410510, [item]); //hard-coded BoardID to properly match the fields of a test-Board
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == item.Name);
+        Assert.IsNull(mondayResponse.Errors);
+
+    }
+
+    // Create Item Using Custom-Row
+    [TestMethod]
+    public async Task TestBoard_CreateItem_UsingCustomRow_Should_Be_Ok()
+    {
+        // Arrange
+        MondayTestRow testRow = new()
+        {
+            Name = "Test Item Create",
+            Group = new Group()
+            {
+                Id = "topics"
+            },
+            Text = new ColumnText()
+            {
+                Text = "FROM UNIT TEST"
+            },
+            Date = new ColumnDateTime()
+            {
+                Date = DateTime.Now
+            },
+            Dropdown = new ColumnDropDown()
+            {
+                LabelId = 0
+            },
+            Status = new ColumnStatus()
+            {
+                StatusId = 1,
+            },
+            Files = new ColumnFile()
+        };
+
+        // Act
+        NET.Application.MondayResponse<MondayTestRow> mondayResponse =
+            await this.MondayClient!.CreateBoardItemsAsync<MondayTestRow>(7576410510, [testRow]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
+        Assert.IsNull(mondayResponse.Errors);
+
+    }
+
+    // Update Item - Test case for issue # 10
+    [TestMethod]
+    public async Task TestBoard_UpdateItem_Issue10_Should_Be_Ok()
+    {
+        // Arrange
+        MondayTestRow testRow = new()
+        {
+            Name = "Test Item Update Details For Issue 10",
+            Group = new Group()
+            {
+                Id = "group_title"
+            },
+            Text = new ColumnText()
+            {
+                Text = "ITEM CREATED FROM UNIT TEST"
+            },
+            Date = new ColumnDateTime()
+            {
+                Date = DateTime.Now
+            },
+            Dropdown = new ColumnDropDown()
+            {
+                LabelId = 1
+            },
+            Status = new ColumnStatus()
+            {
+                StatusId = 1,
+            },
+            Files = new ColumnFile()
+        };
+
+        // Act
+        NET.Application.MondayResponse<MondayTestRow> mondayResponse =
+            await this.MondayClient!.CreateBoardItemsAsync<MondayTestRow>(7576410510, [testRow]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
+        Assert.IsNull(mondayResponse.Errors);
+
+        // Change The Text
+        testRow.Text.Text = "Updated!";
+        testRow.Status.StatusId = 2;
+        testRow.Dropdown.LabelId = 2;
+
+        // Attempt To Update The Item.
+        mondayResponse = await this.MondayClient!.UpdateBoardItemsAsync<MondayTestRow>(7576410510, [testRow]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
+        Assert.IsNull(mondayResponse.Errors);
+    }
+
+    // Update Item - Test case for issue # 9
+    [TestMethod]
+    public async Task TestBoard_UpdateItem_Issue9_Should_Be_Ok()
+    {
+        // Arrange
+        MondayTestRow testRow = new()
+        {
+            Name = "Test Item Update Details For Issue 9",
+            Group = new Group()
+            {
+                Id = "group_title"
+            },
+            Text = new ColumnText()
+            {
+                Text = "ITEM CREATED FROM VS"
+            },
+            Date = new ColumnDateTime()
+            {
+                Date = DateTime.Now
+            },
+            Dropdown = new ColumnDropDown()
+            {
+                LabelId = 1
+            },
+            Status = new ColumnStatus()
+            {
+                StatusId = 1,
+            },
+            Files = new ColumnFile()
+        };
+
+        // Act
+        NET.Application.MondayResponse<MondayTestRow> mondayResponse =
+            await this.MondayClient!.CreateBoardItemsAsync<MondayTestRow>(7576410510, [testRow]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
+        Assert.IsNull(mondayResponse.Errors);
+
+        // Change The Text
+        testRow.Text.Text = "Updated!";
+        testRow.Name = null; // <- test issue # 9
+        testRow.Status.StatusId = 2;
+        testRow.Dropdown.LabelId = 2;
+
+        // Attempt To Update The Item.
+        mondayResponse = await this.MondayClient!.UpdateBoardItemsAsync<MondayTestRow>(7576410510, [testRow]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
+        Assert.IsNull(mondayResponse.Errors);
+    }
+
+    // Update Item and Upload a File - With Debug Console Messages
+    [TestMethod]
+    public async Task TestBoard_UpdateItem_UpdateFile_Should_Be_Ok()
+    {
+        // Arrange
+        Item item = new()
+        {
+            Name = "Test Item Create Then Edit Then Upload File 3",
+            Group = new Group()
+            {
+                Id = "group_title"
+            },
+            ColumnValues =
+            [
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnText()
+                 {
+                     Id = "text__1",
+                     Text = "Created with VS Test Case"
+                 },
+             },
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnStatus()
+                 {
+                     Id = "status",
+                     StatusId = 1
+                 },
+             },
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnDateTime()
+                 {
+                     Id = "date4",
+                    Date = DateTime.Now
+                 },
+             },
+
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnDropDown()
+                 {
+                     Id = "dropdown__1",
+                    LabelId = 1
+                 },
+             },
+            ]
+        };
+
+
+        // Create the item
+        NET.Application.MondayResponse<Item> mondayResponseCreate =
+            await this.MondayClient!.CreateBoardItemsAsync(7576410510, [item]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseCreate.IsSuccessful);
+        Assert.IsNull(mondayResponseCreate.Errors);
+        Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseCreate.Response.FirstOrDefault()?.Data?.Name == item.Name);
+        Assert.IsTrue(item.Id > 0);
+
+        // Arrange
+        FileUpload fileUpload = new()
+        {
+            FileName = "test.txt",
+            StreamContent = new StreamContent(File.OpenRead("test.txt")),
+            ColumnId = "files9__1"
+        };
+
+        item.FileUpload = fileUpload;
+
+        // Act
+        NET.Application.MondayResponse<Asset> uploadFilesMondayResponse =
+            await this.MondayClient!.UploadFileToColumnAsync([item]);
+
+        // Assert
+        Assert.IsTrue(uploadFilesMondayResponse.Response?.Count == 1);
+        Assert.IsTrue(uploadFilesMondayResponse.IsSuccessful);
+        Assert.IsTrue(uploadFilesMondayResponse.Errors is null);
+    }
+
+    // Add Update Details with an Uploaded File to an Item
+    [TestMethod]
+    public async Task TestBoard_CreateThenAddUpdateDetailsWithFile_Should_Be_Ok()
+    {
+        // Arrange
+        Item item = new()
+        {
+            Name = "Test Item Update Details With File",
+            Group = new Group()
+            {
+                Id = "group_title"
+            },
+            ColumnValues =
+            [
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnText()
+                 {
+                     Id = "text__1",
+                     Text = "Update With File"
+                 },
+             },
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnStatus()
+                 {
+                     Id = "status",
+                     StatusId = 1
+                 },
+             },
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnDateTime()
+                 {
+                     Id = "date4",
+                    Date = DateTime.Now
+                 },
+             },
+
+                new ColumnValue()
+             {
+                 ColumnBaseType = new ColumnDropDown()
+                 {
+                     Id = "dropdown__1",
+                    LabelId = 1
+                 },
+             },
+            ]
+        };
+
+        // Act
+        NET.Application.MondayResponse<Item> mondayResponseCreate =
+            await this.MondayClient!.CreateBoardItemsAsync(7576410510, [item]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseCreate.IsSuccessful);
+        Assert.IsNull(mondayResponseCreate.Errors);
+        Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.Name == item.Name);
+
+        // Create Update For The Item
+        Update update = new()
+        {
+            ItemId = mondayResponseCreate.Response.FirstOrDefault()?.Data?.Id,
+            TextBody = "Test Updated With File"
+        };
+
+        // Act
+        NET.Application.MondayResponse<Update> mondayResponse =
+            await this.MondayClient!.CreateItemsUpdateAsync([update]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+        Assert.IsTrue(mondayResponse.Response?.Count == 1);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.TextBody == update.TextBody);
+
+
+        // Arrange
+        Update update0 = new()
+        {
+            ItemId = mondayResponse.Response.FirstOrDefault()?.Data?.Id,
+            FileUpload = new FileUpload() { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
+        };
+
+        // Act
+        NET.Application.MondayResponse<Asset> uploadFilesMondayResponse =
+            await this.MondayClient!.UploadFileToUpdateAsync([update0]);
+
+        // Assert
+        Assert.IsTrue(uploadFilesMondayResponse.Response?.Count == 1);
+        Assert.IsTrue(uploadFilesMondayResponse.IsSuccessful);
+        Assert.IsTrue(uploadFilesMondayResponse.Errors is null);
+    }
+
+    // Create and Delete an Item
+    [TestMethod]
+    public async Task TestBoard_DeleteItem_Should_Be_Ok()
+    {
+        // Arrange
+        Item item = new()
+        {
+            Name = "Test Item - FOR DELETION",
+            Group = new Group() { Id = "group_title" }
+        };
+
+        // Act
+        NET.Application.MondayResponse<Item> mondayResponse =
+            await this.MondayClient!.CreateBoardItemsAsync(7576410510, [item]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+        Assert.IsTrue(mondayResponse.Response?.Count == 1);
+        Assert.IsTrue(item.Id > 0);
+
+        // Act
+        mondayResponse = await this.MondayClient!.DeleteItemsAsync([item]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsNull(mondayResponse.Errors);
+        Assert.IsTrue(mondayResponse.Response?.Count == 1);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == item.Id);
+    }
+
+
     public record TestRowWithGroup : TestRow
     {
         public Group? Group { get; set; }
@@ -1266,4 +1694,26 @@ public class FunctionalTests
         [MondayColumnHeader("numbers8")]
         public ColumnNumber? Priority { get; set; }
     }
+
+    // Fields currently on Test-Board
+    public record MondayTestRow : MondayRow
+    {
+        public Group? Group { get; set; }
+
+        [MondayColumnHeader("status")]
+        public ColumnStatus? Status { get; set; }
+
+        [MondayColumnHeader("date4")]
+        public ColumnDateTime? Date { get; set; }
+
+        [MondayColumnHeader("dropdown__1")]
+        public ColumnDropDown? Dropdown { get; set; }
+
+        [MondayColumnHeader("text__1")]
+        public ColumnText? Text { get; set; }
+
+        [MondayColumnHeader("files9__1")]
+        public ColumnFile? Files { get; set; }
+    }
+
 }
