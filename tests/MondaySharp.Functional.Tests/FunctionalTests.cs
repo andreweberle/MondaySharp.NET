@@ -13,6 +13,7 @@ using MondaySharp.NET.Infrastructure.Utilities;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using MondaySharp.NET.Application;
 using static MondaySharp.Functional.Tests.FunctionalTests;
 
 namespace MondaySharp.Functional.Tests;
@@ -1605,8 +1606,56 @@ public class FunctionalTests
         Assert.IsTrue(mondayResponse.Response?.Count == 1);
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == item.Id);
     }
+    
+    [TestMethod]
+    public async Task Update_Board_Item_Name_Should_Be_Ok()
+    {
+        // Arrange
+        Customer testRow = new()
+        {
+            Name = "Test Item Create",
+            XeroId = new ColumnText()
+            {
+                Id = "text_mkmn7km4",
+                Text = "FROM UNIT TEST"
+            }
+        };
 
+        // Act
+        NET.Application.MondayResponse<Customer> mondayResponse =
+            await MondayClient!.CreateBoardItemsAsync<Customer>(this.BoardId, [testRow]);
 
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
+        Assert.IsNull(mondayResponse.Errors);
+        
+        // Act
+        List<Customer> items = new List<Customer>();
+        MondayData<Customer>? item = mondayResponse.Response?.FirstOrDefault();
+        
+        // Assert
+        Assert.IsNotNull(item);
+        Assert.IsTrue(item.Data?.Id > 0);
+        
+        // Arrange
+        item.Data.Name = "Updated Item";
+        items.Add(item.Data);
+        MondayResponse<Customer> updatedItem = await this.MondayClient.UpdateBoardItemsAsync<Customer>(this.BoardId, items.ToArray());
+        
+        // Assert
+        Assert.IsTrue(updatedItem.IsSuccessful);
+        Assert.IsTrue(updatedItem.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(updatedItem.Response?.FirstOrDefault()?.Data?.Name == item.Data.Name);
+        Assert.IsNull(updatedItem.Errors);
+    }
+    public record Customer : MondayRow
+    {
+        [MondayColumnHeader("text_mkmn7km4")]
+        public ColumnText? XeroId { get; set; }
+    }
+    
     public record TestRowWithGroup : TestRow
     {
         public Group? Group { get; set; }
