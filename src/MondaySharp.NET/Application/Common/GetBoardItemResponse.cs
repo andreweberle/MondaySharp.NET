@@ -11,8 +11,7 @@ internal class GetBoardItemsByColumnValuesResponse
 
 internal class NextItemsPageResponse
 {
-    [JsonProperty("next_items_page")]
-    public NextItemsPage? NextItemsPage { get; set; }
+    [JsonProperty("next_items_page")] public NextItemsPage? NextItemsPage { get; set; }
 }
 
 internal class NextItemsPage
@@ -24,8 +23,7 @@ internal class NextItemsPage
 
 internal class GetBoardItemsResponse
 {
-    [JsonProperty("boards")]
-    public List<Board>? Boards { get; set; }
+    [JsonProperty("boards")] public List<Board>? Boards { get; set; }
 }
 
 internal class GetBoardsResponse : GetBoardItemsResponse

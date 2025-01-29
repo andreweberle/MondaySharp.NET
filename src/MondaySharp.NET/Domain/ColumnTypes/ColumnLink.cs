@@ -2,7 +2,10 @@
 
 public record ColumnLink : ColumnBaseType
 {
-    public ColumnLink() { }
+    public ColumnLink()
+    {
+    }
+
     public Uri? Uri { get; set; }
     public string? Text { get; set; }
 
@@ -14,17 +17,17 @@ public record ColumnLink : ColumnBaseType
     /// <param name="text"></param>
     public ColumnLink(string? id, Uri uri, string? text)
     {
-        this.Id = id;
-        this.Uri = uri;
+        Id = id;
+        Uri = uri;
 
         // If There Is No Message,
         // We Will Use The Uri As Default.
-        this.Text = text ?? uri.OriginalString;
+        Text = text ?? uri.OriginalString;
     }
 
     public ColumnLink(string? id)
     {
-        this.Id = id;
+        Id = id;
     }
 
     /// <summary>
@@ -35,25 +38,25 @@ public record ColumnLink : ColumnBaseType
     /// <param name="text"></param>
     public ColumnLink(string? id, string? uri, string? text)
     {
-        this.Id = id;
+        Id = id;
 
         if (Uri.TryCreate(uri, UriKind.Absolute, out Uri? result))
         {
-            this.Uri = result;
+            Uri = result;
         }
 
         // If There Is No Message,
         // We Will Use The Uri As Default.
-        this.Text = text ?? uri;
+        Text = text ?? uri;
     }
 
     public override string ToString()
     {
-        if (this.Uri == null)
+        if (Uri == null)
         {
-            return "\"" + this.Id + "\" : null";
+            return "\"" + Id + "\" : null";
         }
 
-        return "\"" + this.Id + "\" : {\"url\" : \"" + this.Uri?.OriginalString + "\", \"text\":\"" + this.Text + "\"}";
+        return "\"" + Id + "\" : {\"url\" : \"" + Uri?.OriginalString + "\", \"text\":\"" + Text + "\"}";
     }
 }

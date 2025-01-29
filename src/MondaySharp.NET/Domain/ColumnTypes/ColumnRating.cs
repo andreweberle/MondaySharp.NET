@@ -6,11 +6,13 @@ public record ColumnRating : ColumnBaseType
 {
     public MondayRating? Rating { get; set; }
 
-    public ColumnRating() { }
+    public ColumnRating()
+    {
+    }
 
     public ColumnRating(string? id)
     {
-        this.Id = id;
+        Id = id;
     }
 
     /// <summary>
@@ -20,8 +22,8 @@ public record ColumnRating : ColumnBaseType
     /// <param name="rating"></param>
     public ColumnRating(string? id, MondayRating? rating)
     {
-        this.Id = id;
-        this.Rating = rating;
+        Id = id;
+        Rating = rating;
     }
 
     /// <summary>
@@ -30,6 +32,6 @@ public record ColumnRating : ColumnBaseType
     /// <returns></returns>
     public override string ToString()
     {
-        return $"\"{this.Id}\" : {{\"rating\" : {(int?)this.Rating ?? 0}}}";
+        return $"\"{Id}\" : {{\"rating\" : {(int?)Rating ?? 0}}}";
     }
 }

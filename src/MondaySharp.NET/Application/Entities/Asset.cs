@@ -11,30 +11,21 @@ public record Asset
 
     public ulong? ItemId { get; set; }
 
-    [JsonProperty("name")]
-    public string? Name { get; set; }
+    [JsonProperty("name")] public string? Name { get; set; }
 
-    [JsonProperty("public_url")]
-    public Uri? PublicUrl { get; set; }
+    [JsonProperty("public_url")] public Uri? PublicUrl { get; set; }
 
-    [JsonProperty("url_thumbnail")]
-    public Uri? ThumbnailUrl { get; set;}
+    [JsonProperty("url_thumbnail")] public Uri? ThumbnailUrl { get; set; }
 
-    [JsonProperty("created_at")]
-    public DateTimeOffset? CreatedAt { get; set; }
+    [JsonProperty("created_at")] public DateTimeOffset? CreatedAt { get; set; }
 
-    [JsonProperty("file_extension")]
-    public string? FileExtension { get; set; }
+    [JsonProperty("file_extension")] public string? FileExtension { get; set; }
 
-    [JsonProperty("file_size")]
-    public ulong? FileSize { get; set; }
+    [JsonProperty("file_size")] public ulong? FileSize { get; set; }
 
-    [JsonProperty("original_geometry")]
-    public string? OriginalGeometry { get; set; }
+    [JsonProperty("original_geometry")] public string? OriginalGeometry { get; set; }
 
-    [JsonProperty("uploaded_by")]
-    public MondaySharp.NET.Application.Entities.User? UploadedBy { get; set; }
+    [JsonProperty("uploaded_by")] public User? UploadedBy { get; set; }
 
-    [JsonProperty("url")]
-    public Uri? Url { get; set; }
+    [JsonProperty("url")] public Uri? Url { get; set; }
 }

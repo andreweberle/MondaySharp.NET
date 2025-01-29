@@ -12,8 +12,7 @@ public record Board
     [JsonConverter(typeof(StringToULongJsonConverter))]
     public ulong Id { get; set; }
 
-    [JsonProperty("name")]
-    public string? Name { get; set; }
+    [JsonProperty("name")] public string? Name { get; set; }
 
     [JsonProperty("state")]
     [JsonConverter(typeof(StringEnumConverter))]
@@ -23,8 +22,7 @@ public record Board
     [JsonConverter(typeof(StringEnumConverter))]
     public MondayBoardKind? BoardKind { get; set; }
 
-    [JsonProperty("description")]
-    public string? Description { get; set; }
+    [JsonProperty("description")] public string? Description { get; set; }
 
     [JsonProperty("permissions")]
     [JsonConverter(typeof(StringEnumConverter))]
@@ -38,12 +36,9 @@ public record Board
     [JsonConverter(typeof(StringToULongJsonConverter))]
     public ulong BoardFolderId { get; set; }
 
-    [JsonProperty("item_terminology")]
-    public string? ItemTerminology { get; set; }
+    [JsonProperty("item_terminology")] public string? ItemTerminology { get; set; }
 
-    [JsonProperty("items_count")]
-    public int ItemsCount { get; set; }
+    [JsonProperty("items_count")] public int ItemsCount { get; set; }
 
-    [JsonProperty("items_page")]
-    public ItemsPageByColumnValue? ItemsPage { get; set; }
+    [JsonProperty("items_page")] public ItemsPageByColumnValue? ItemsPage { get; set; }
 }

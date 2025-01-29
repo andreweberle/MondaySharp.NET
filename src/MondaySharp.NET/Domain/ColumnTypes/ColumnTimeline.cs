@@ -2,37 +2,42 @@
 
 public record ColumnTimeline : ColumnBaseType
 {
-    public ColumnTimeline() { }
+    public ColumnTimeline()
+    {
+    }
+
     public DateTime? From { get; set; }
     public DateTime? To { get; set; }
+
     public ColumnTimeline(string? id, DateTime from, DateTime to)
     {
-        this.Id = id;
-        this.From = from;
-        this.To = to;
+        Id = id;
+        From = from;
+        To = to;
     }
 
     public ColumnTimeline(string? id, string from, string to)
     {
-        this.Id = id;
-        this.From = DateTime.Parse(from);
-        this.To = DateTime.Parse(to);
+        Id = id;
+        From = DateTime.Parse(from);
+        To = DateTime.Parse(to);
     }
 
     public ColumnTimeline(string? id)
     {
-        this.Id = id;
+        Id = id;
     }
 
     public override string ToString()
     {
-        if (this.From == null && this.To == null)
+        if (From == null && To == null)
         {
-            return "\"" + this.Id + "\" : null";
+            return "\"" + Id + "\" : null";
         }
 
-        return this.From != null && this.To != null
-            ? "\"" + this.Id + "\" : {\"from\" : \"" + this.From.Value.ToString("yyyy-MM-dd") + "\", \"to\" : \"" + this.To.Value.ToString("yyyy-MM-dd") + "\"}"
+        return From != null && To != null
+            ? "\"" + Id + "\" : {\"from\" : \"" + From.Value.ToString("yyyy-MM-dd") + "\", \"to\" : \"" +
+              To.Value.ToString("yyyy-MM-dd") + "\"}"
             : base.ToString();
     }
 }

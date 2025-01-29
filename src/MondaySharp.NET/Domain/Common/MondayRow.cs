@@ -5,9 +5,7 @@ namespace MondaySharp.NET.Domain.Common;
 
 public record MondayRow
 {
-    [MondayColumnHeader("id")]
-    public ulong Id { get; set; }
+    [MondayColumnHeader("id")] public ulong Id { get; set; }
 
-    [MondayColumnHeader("name")]
-    public string? Name { get; set; }
+    [MondayColumnHeader("name")] public string? Name { get; set; }
 }

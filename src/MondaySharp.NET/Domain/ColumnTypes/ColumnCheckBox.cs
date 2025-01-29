@@ -1,9 +1,12 @@
 ﻿namespace MondaySharp.NET.Domain.ColumnTypes;
+
 public record ColumnCheckBox : ColumnBaseType
 {
     public bool IsChecked { get; set; }
 
-    public ColumnCheckBox() { }
+    public ColumnCheckBox()
+    {
+    }
 
     /// <summary>
     /// 
@@ -12,8 +15,8 @@ public record ColumnCheckBox : ColumnBaseType
     /// <param name="isChecked"></param>
     public ColumnCheckBox(string? id, bool isChecked)
     {
-        this.Id = id;
-        this.IsChecked = isChecked;
+        Id = id;
+        IsChecked = isChecked;
     }
 
     /// <summary>
@@ -22,6 +25,6 @@ public record ColumnCheckBox : ColumnBaseType
     /// <returns></returns>
     public override string ToString()
     {
-        return this.IsChecked ? $"\"check\" : {{\"checked\" : \"{this.IsChecked.ToString().ToLower()}\"}}" : $"\"{this.Id}\" : null";
+        return IsChecked ? $"\"check\" : {{\"checked\" : \"{IsChecked.ToString().ToLower()}\"}}" : $"\"{Id}\" : null";
     }
 }

@@ -5,7 +5,8 @@ namespace MondaySharp.NET.Application.JsonConverters;
 
 internal class StringToMondayBoardKindJsonConverter : JsonConverter<MondayBoardKind?>
 {
-    public override MondayBoardKind? ReadJson(JsonReader reader, Type objectType, MondayBoardKind? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override MondayBoardKind? ReadJson(JsonReader reader, Type objectType, MondayBoardKind? existingValue,
+        bool hasExistingValue, JsonSerializer serializer)
     {
         if (Enum.TryParse(reader.Value?.ToString(), out MondayBoardKind result))
         {

@@ -2,12 +2,15 @@
 
 public record ColumnLongText : ColumnBaseType
 {
-    public ColumnLongText() { }
+    public ColumnLongText()
+    {
+    }
+
     public string? Text { get; set; }
 
     public ColumnLongText(string? id)
     {
-        this.Id = id;
+        Id = id;
     }
 
     /// <summary>
@@ -17,16 +20,17 @@ public record ColumnLongText : ColumnBaseType
     /// <param name="text"></param>
     public ColumnLongText(string? id, string? text)
     {
-        this.Id = id;
-        this.Text = text;
+        Id = id;
+        Text = text;
     }
+
     public override string ToString()
     {
-        if (string.IsNullOrEmpty(this.Text))
+        if (string.IsNullOrEmpty(Text))
         {
-            return "\"" + this.Id + "\" : null";
+            return "\"" + Id + "\" : null";
         }
 
-        return "\"" + this.Id + "\" : {\"text\" : \"" + this.Text + "\"}";
+        return "\"" + Id + "\" : {\"text\" : \"" + Text + "\"}";
     }
 }

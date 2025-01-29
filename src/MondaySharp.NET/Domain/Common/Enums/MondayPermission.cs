@@ -5,5 +5,5 @@ public enum MondayPermission
     Everyone,
     Collaborators,
     Assignee,
-    Owners,
+    Owners
 }

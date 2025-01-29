@@ -2,7 +2,10 @@
 
 public record ColumnNumber : ColumnBaseType
 {
-    public ColumnNumber() { }
+    public ColumnNumber()
+    {
+    }
+
     /// <summary>
     /// 
     /// </summary>
@@ -15,8 +18,8 @@ public record ColumnNumber : ColumnBaseType
     /// <param name="number"></param>
     public ColumnNumber(string? id, float? number)
     {
-        this.Id = id;
-        this.Number = number;
+        Id = id;
+        Number = number;
     }
 
     /// <summary>
@@ -25,11 +28,11 @@ public record ColumnNumber : ColumnBaseType
     /// <returns></returns>
     public override string ToString()
     {
-        if (this.Number == null)
+        if (Number == null)
         {
-            return "\"" + this.Id + "\" : null";
+            return "\"" + Id + "\" : null";
         }
 
-        return "\"" + this.Id + "\" : \"" + this.Number + "\"";
+        return "\"" + Id + "\" : \"" + Number + "\"";
     }
 }

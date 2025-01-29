@@ -2,13 +2,16 @@
 
 public record ColumnDateTime : ColumnBaseType
 {
-    public ColumnDateTime() { }
+    public ColumnDateTime()
+    {
+    }
+
     public DateTime? Date { get; set; }
     public bool IncludeTime { get; set; }
 
     public ColumnDateTime(string? id)
     {
-        this.Id = id;
+        Id = id;
     }
 
     /// <summary>
@@ -18,33 +21,35 @@ public record ColumnDateTime : ColumnBaseType
     /// <param name="dateTime"></param>
     public ColumnDateTime(string? id, DateTime? dateTime, bool includeTime = false)
     {
-        this.Id = id;
-        this.Date = dateTime;
-        this.IncludeTime = includeTime;
+        Id = id;
+        Date = dateTime;
+        IncludeTime = includeTime;
     }
+
     public ColumnDateTime(string? id, string dateTime, string includeTime = "false")
     {
-        this.Id = id;
-        this.Date = DateTime.Parse(dateTime);
-        this.IncludeTime = Convert.ToBoolean(includeTime);
+        Id = id;
+        Date = DateTime.Parse(dateTime);
+        IncludeTime = Convert.ToBoolean(includeTime);
     }
 
     public ColumnDateTime(string? id, string dateTime)
     {
-        this.Id = id;
-        this.Date = DateTime.Parse(dateTime);
-        this.IncludeTime = this.Date?.TimeOfDay.TotalSeconds != 0;
+        Id = id;
+        Date = DateTime.Parse(dateTime);
+        IncludeTime = Date?.TimeOfDay.TotalSeconds != 0;
     }
 
     public override string ToString()
     {
-        if (this.Date == null)
+        if (Date == null)
         {
-            return "\"" + this.Id + "\" : null";
+            return "\"" + Id + "\" : null";
         }
 
-        return this.IncludeTime
-            ? "\"" + this.Id + "\" : {\"date\" : \"" + this.Date?.ToString("yyyy-MM-dd") + "\", \"time\" : \"" + this.Date?.ToString("HH:mm:ss") + "\"}"
-            : "\"" + this.Id + "\" : {\"date\" : \"" + this.Date?.ToString("yyyy-MM-dd") + "\"}";
+        return IncludeTime
+            ? "\"" + Id + "\" : {\"date\" : \"" + Date?.ToString("yyyy-MM-dd") + "\", \"time\" : \"" +
+              Date?.ToString("HH:mm:ss") + "\"}"
+            : "\"" + Id + "\" : {\"date\" : \"" + Date?.ToString("yyyy-MM-dd") + "\"}";
     }
 }

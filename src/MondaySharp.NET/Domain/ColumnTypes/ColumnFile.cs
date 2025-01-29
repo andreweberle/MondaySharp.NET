@@ -10,34 +10,36 @@ public record ColumnFile : ColumnBaseType
 
     public ColumnFile(string? id, string? text)
     {
-        this.Id = id;
+        Id = id;
 
         if (text is not null)
         {
-            string[] privateFileUrls = text.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            string[] privateFileUrls =
+                text.Split(",", StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
             if (privateFileUrls.Length > 0)
             {
-                this.PrivateFileUrls = new Uri[privateFileUrls.Length];
+                PrivateFileUrls = new Uri[privateFileUrls.Length];
 
                 for (int i = 0; i < privateFileUrls.Length; i++)
                 {
                     if (Uri.TryCreate(privateFileUrls[i], UriKind.Absolute, out Uri? uri))
                     {
-                        this.PrivateFileUrls[i] = uri;
+                        PrivateFileUrls[i] = uri;
                     }
                 }
             }
         }
     }
+
     public override string ToString()
     {
         if (PrivateFileUrls == null || PrivateFileUrls.Length == 0)
         {
-            return $"\"{this.Id}\" : {{\"PrivateFileUrls\":[]}}";
+            return $"\"{Id}\" : {{\"PrivateFileUrls\":[]}}";
         }
 
-        return $"\"{this.Id}\" : {{\"PrivateFileUrls\":[\"{string.Join(",", this.PrivateFileUrls.Select(label => $"\"{label}\""))}\"]}}";
+        return
+            $"\"{Id}\" : {{\"PrivateFileUrls\":[\"{string.Join(",", PrivateFileUrls.Select(label => $"\"{label}\""))}\"]}}";
     }
-
 }
