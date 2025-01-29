@@ -805,9 +805,9 @@ public partial class MondayClient : IMondayClient, IDisposable
 
                 // Check if the property is a MondayRow
                 if (propertyInfo.DeclaringType == typeof(MondayRow)
-                    && propertyInfo.GetCustomAttribute<MondayColumnHeaderAttribute>()!.ColumnId == "name")
+                    && propertyInfo.GetCustomAttribute<MondayColumnHeaderAttribute>()!.ColumnId == MondayDefaultColumnIds.Name)
                 {
-                    columnValues.Add(new ColumnText("name", item.value.Name));
+                    columnValues.Add(new ColumnText(MondayDefaultColumnIds.Name, item.value.Name));
                     continue;
                 }
 
