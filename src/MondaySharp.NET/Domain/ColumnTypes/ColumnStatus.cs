@@ -1,13 +1,13 @@
 ﻿namespace MondaySharp.NET.Domain.ColumnTypes;
 
-public record ColumnStatus :ColumnBaseType
+public record ColumnStatus : ColumnBaseType
 {
     public string? Status { get; set; }
     public int? StatusId { get; set; }
 
     public ColumnStatus(string? id)
     {
-        this.Id = id;
+        Id = id;
     }
 
     /// <summary>
@@ -17,8 +17,8 @@ public record ColumnStatus :ColumnBaseType
     /// <param name="status"></param>
     public ColumnStatus(string? id, string? status)
     {
-        this.Id = id;
-        this.Status = status;
+        Id = id;
+        Status = status;
     }
 
     /// <summary>
@@ -28,8 +28,8 @@ public record ColumnStatus :ColumnBaseType
     /// <param name="statusId"></param>
     public ColumnStatus(string? id, int? statusId)
     {
-        this.Id = id;
-        this.StatusId = statusId;
+        Id = id;
+        StatusId = statusId;
     }
 
     public ColumnStatus()
@@ -38,18 +38,18 @@ public record ColumnStatus :ColumnBaseType
 
     public override string ToString()
     {
-        if (this.Status == null && this.StatusId == null)
+        if (Status == null && StatusId == null)
         {
-            return "\"" + this.Id + "\" : null";
+            return "\"" + Id + "\" : null";
         }
 
         if (string.IsNullOrEmpty(Status))
         {
-            return "\"" + this.Id + "\" : {\"index\" : \"" + this.StatusId + "\"}";
+            return "\"" + Id + "\" : {\"index\" : \"" + StatusId + "\"}";
         }
         else
         {
-            return "\"" + this.Id + "\" : {\"label\" : \"" + this.Status + "\"}";
+            return "\"" + Id + "\" : {\"label\" : \"" + Status + "\"}";
         }
     }
 }

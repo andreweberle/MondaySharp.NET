@@ -1,23 +1,31 @@
 # MondaySharp.NET
+
 <!---
 [![Build Status](https://your-ci-service.com/your-username/your-repo/badge.svg)](https://your-ci-service.com/your-username/your-repo)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 -->
 
-MondaySharp.NET is a powerful and intuitive C# library for interacting with the Monday.com API. With this library, developers can seamlessly integrate Monday.com functionalities into their C# applications, making it easier than ever to manage and automate workflows.
+MondaySharp.NET is a powerful and intuitive C# library for interacting with the Monday.com API. With this library,
+developers can seamlessly integrate Monday.com functionalities into their C# applications, making it easier than ever to
+manage and automate workflows.
 
 ## Features
 
-- **Easy Integration**: Quickly integrate Monday.com features into your C# projects with a clean and straightforward API.
-- **Full API Coverage**: Access the complete range of Monday.com API endpoints, allowing you to interact with boards, items, columns, and more.
-- **Type-Safe Models**: Benefit from type-safe models that reflect the structure of Monday.com entities, providing a robust development experience.
-- **Asynchronous Support**: Leverage asynchronous methods for non-blocking communication with the Monday.com API, ensuring optimal performance.
+- **Easy Integration**: Quickly integrate Monday.com features into your C# projects with a clean and straightforward
+  API.
+- **Full API Coverage**: Access the complete range of Monday.com API endpoints, allowing you to interact with boards,
+  items, columns, and more.
+- **Type-Safe Models**: Benefit from type-safe models that reflect the structure of Monday.com entities, providing a
+  robust development experience.
+- **Asynchronous Support**: Leverage asynchronous methods for non-blocking communication with the Monday.com API,
+  ensuring optimal performance.
 
 ## Getting Started
 
 The library can be injected via Dependency Injection or you can initialize it manually.
 
-**Initializing** 
+**Initializing**
+
 ```csharp
 services.TryAddMondayClient(options =>
 {
@@ -34,7 +42,7 @@ IMondayClient mondayClient = new MondayClient(this.Logger, options =>
 
 **Reading**<br>
 When binding your row to an object, you can create a record inheriting `MondayRow`
- 
+
 ```csharp
 public record TestRow : MondayRow
 {
@@ -47,12 +55,16 @@ public record TestRow : MondayRow
     public ColumnStatus? Priority { get; set; }
 }
 ```
-If you have a property that doesn't conform to your naming convention, 
-you can simply add the `MondayColumnHeader` attribute, this will tell the client when attempting to bind the properties at runtime to look for this `columnId` instead of using the property name.
+
+If you have a property that doesn't conform to your naming convention,
+you can simply add the `MondayColumnHeader` attribute, this will tell the client when attempting to bind the properties
+at runtime to look for this `columnId` instead of using the property name.
 
 If you need to include `Groups, Assets, Updates`  you can add them as a property.
 
-*Here are some example records that were used during testing to validate Assets, Updates and Group were successfully binding.*
+*Here are some example records that were used during testing to validate Assets, Updates and Group were successfully
+binding.*
+
 ```csharp
 public record TestRowWithAssets : TestRow
 {
@@ -73,7 +85,9 @@ it will detect if there are assets, updates or groups, it will then modify the q
 
 This way, we are not always requesting the assets, updates or groups, only when you need them.
 
-When required to read a column based from [ColumnValues](https://developer.monday.com/api-reference/docs/column-values-v2), you can do the following.
+When required to read a column based
+from [ColumnValues](https://developer.monday.com/api-reference/docs/column-values-v2), you can do the following.
+
 ```csharp
 ColumnValue[] columnValues =
 [
@@ -90,15 +104,19 @@ ColumnValue[] columnValues =
 ];
 List<TestRow?> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId, columnValues).ToListAsync();
 ```
+
 This will attempt to find any items for the `boardId` along with the `columnValues`.
 If you need items without using the `columnValues`, you can simply do the following
 
 *This will enumerate each result asynchronously*
+
 ```csharp
 List<TestRow?> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId).ToListAsync();
 ```
+
 **Creating**<br>
 when required to create an item, you can do the following
+
 ```csharp
 Item[] items =[
     new Item()
@@ -157,6 +175,7 @@ https://developer.monday.com/api-reference/docs/introduction-to-graphql#sample-m
 
 There are any column types, some supported, some not as I'm still building the library.
 Here is a small example pulled from some unit tests.
+
 ```csharp
 // Arrange
 List<ColumnBaseType> columnValues =
@@ -174,6 +193,7 @@ List<ColumnBaseType> columnValues =
     new ColumnTimeline("timeline", new DateTime(2023, 11, 29), new DateTime(2023, 12, 29)),
 ];
 ```
+
 First provide the `columnId` and then filling the rest.
 
 Here is the interface thusfar.
@@ -189,7 +209,8 @@ nuget install MondaySharp.NET
 
 ## Contributing
 
-We welcome contributions! Please check out our [Contributing Guidelines](./CONTRIBUTING.md) for details on how to get started.
+We welcome contributions! Please check out our [Contributing Guidelines](./CONTRIBUTING.md) for details on how to get
+started.
 
 ## License
 

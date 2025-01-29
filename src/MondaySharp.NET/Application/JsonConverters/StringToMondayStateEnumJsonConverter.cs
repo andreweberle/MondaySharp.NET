@@ -5,7 +5,8 @@ namespace MondaySharp.NET.Application.JsonConverters;
 
 internal class StringToMondayStateEnumJsonConverter : JsonConverter<MondayState?>
 {
-    public override MondayState? ReadJson(JsonReader reader, Type objectType, MondayState? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override MondayState? ReadJson(JsonReader reader, Type objectType, MondayState? existingValue,
+        bool hasExistingValue, JsonSerializer serializer)
     {
         // Try to parse the value to a ulong.
         if (Enum.TryParse(reader.Value?.ToString(), out MondayState result))

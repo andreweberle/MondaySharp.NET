@@ -21,7 +21,8 @@ public static class ServiceCollectionExtension
         // Add Monday Client To The Service Collection.
         services.AddSingleton<IMondayClient, MondayClient>(sp =>
         {
-            return new MondayClient(sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MondayClient>>(), options);
+            return new MondayClient(sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<MondayClient>>(),
+                options);
         });
 
         // Return The Service Collection.

@@ -20,58 +20,57 @@ namespace MondaySharp.Functional.Tests;
 [TestClass]
 public class FunctionalTests
 {
-    IMondayClient? MondayClient { get; set; }
-    IConfiguration? Configuration { get; set; } = null!;
-    IServiceProvider? ServiceProvider { get; set; } = null!;
-    IServiceCollection? Services { get; set; } = null!;
+    private IMondayClient? MondayClient { get; set; }
+    private IConfiguration? Configuration { get; set; } = null!;
+    private IServiceProvider? ServiceProvider { get; set; } = null!;
+    private IServiceCollection? Services { get; set; } = null!;
 
-    ulong BoardId { get; set; }
+    private ulong BoardId { get; set; }
 
     [TestInitialize]
     public void Init()
     {
         // Load appsettings.json
-        this.Configuration = new ConfigurationBuilder()
+        Configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
 
         // Get the board id
-        this.BoardId = ulong.Parse(Configuration["boardId"]!);
+        BoardId = ulong.Parse(Configuration["boardId"]!);
 
         // Create service collection
-        this.Services = new ServiceCollection();
-        this.Services.AddLogging();
-        this.Services.TryAddMondayClient(options =>
+        Services = new ServiceCollection();
+        Services.AddLogging();
+        Services.TryAddMondayClient(options =>
         {
-            options.EndPoint = new System.Uri(Configuration["mondayUrl"]!);
+            options.EndPoint = new Uri(Configuration["mondayUrl"]!);
             options.Token = Configuration["mondayToken"]!;
         });
 
         // Build service provider
-        this.ServiceProvider = this.Services.BuildServiceProvider();
-        this.MondayClient = this.ServiceProvider.GetRequiredService<IMondayClient>();
+        ServiceProvider = Services.BuildServiceProvider();
+        MondayClient = ServiceProvider.GetRequiredService<IMondayClient>();
     }
 
     [TestMethod]
     public async Task GetItemsByColumnValues_Should_Be_OkAsync()
     {
         // Arrange
+        await this.TestBoard_CreateItem_Should_Be_Ok();
+        
+        // Arrange
         ColumnValue[] columnValues =
         [
-            new ColumnValue()
+            new()
             {
-                Id = "text0",
-                Text = "Andrew Eberle"
-            },
-            new ColumnValue()
-            {
-                Id = "numbers9",
-                Text = "10"
-            },
+                Id = "text_mkmn7km4",
+                Text = "FROM UNIT TEST"
+            }
         ];
 
         // Act
-        NET.Application.MondayResponse<TestRow> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId, columnValues);
+        NET.Application.MondayResponse<TestRow> items =
+            await MondayClient!.GetBoardItemsAsync<TestRow>(BoardId, columnValues);
 
         // Assert
         Assert.IsTrue(items.Response?.Count > 0);
@@ -81,9 +80,35 @@ public class FunctionalTests
     public async Task GetItems_Should_Be_OkAsync()
     {
         // Arrange
+        Item item = new()
+        {
+            Name = "Test Item Create 2",
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text_mkmn7km4",
+                        Text = "FROM UNIT TEST"
+                    }
+                },
+            ]
+        };
 
         // Act
-        NET.Application.MondayResponse<TestRow> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId);
+        NET.Application.MondayResponse<Item> mondayResponse =
+            await MondayClient!.CreateBoardItemsAsync(this.BoardId,
+                [item]); //hard-coded BoardID to properly match the fields of a test-Board
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == item.Name);
+        Assert.IsNull(mondayResponse.Errors);
+
+        // Act
+        NET.Application.MondayResponse<TestRow> items = await MondayClient!.GetBoardItemsAsync<TestRow>(BoardId);
 
         // Assert
         Assert.IsTrue(items.Response?.Count > 0);
@@ -92,24 +117,21 @@ public class FunctionalTests
     [TestMethod]
     public async Task GetItemsByColumnValuesWithGroup_Should_Be_OkAsync()
     {
+        await this.TestBoard_CreateItem_Should_Be_Ok();
+        
         // Arrange
         ColumnValue[] columnValues =
         [
-            new ColumnValue()
+            new()
             {
-                Id = "text0",
-                Text = "Andrew Eberle"
-            },
-            new ColumnValue()
-            {
-                Id = "numbers9",
-                Text = "10"
-            },
+                Id = "text_mkmn7km4",
+                Text = "FROM UNIT TEST"
+            }
         ];
 
         // Act
         NET.Application.MondayResponse<TestRowWithGroup> items =
-            await this.MondayClient!.GetBoardItemsAsync<TestRowWithGroup>(this.BoardId, columnValues);
+            await MondayClient!.GetBoardItemsAsync<TestRowWithGroup>(BoardId, columnValues);
 
         // Assert
         Assert.IsTrue(items.Response?.Count > 0);
@@ -121,26 +143,28 @@ public class FunctionalTests
         // Arrange
         ColumnValue[] columnValues =
         [
-            new ColumnValue()
+            new()
             {
-                Id = "text0",
-                Text = "Andrew Eberle"
-            },
+                Id = "text_mkmn7km4",
+                Text = "FROM UNIT TEST"
+            }
         ];
 
         // Act
-        await this.MondayClient!.CreateBoardItemsAsync<TestRowWithAssets>(BoardId, [new TestRowWithAssets()
-        {
-            Name = "Test Item 1",
-            Text = new ColumnText()
+        await MondayClient!.CreateBoardItemsAsync<TestRowWithAssets>(BoardId, [
+            new TestRowWithAssets()
             {
-                Id = "text0",
-                Text = "Andrew Eberle"
+                Name = "Test Item 1",
+                Text = new ColumnText()
+                {
+                    Id = "text_mkmn7km4",
+                    Text = "FROM UNIT TEST"
+                }
             }
-        }]);
+        ]);
 
         NET.Application.MondayResponse<TestRowWithAssets> mondayResponses =
-            await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, columnValues);
+            await MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(BoardId, columnValues);
 
         // Assert
         Assert.IsTrue(mondayResponses.Response?.Count > 0);
@@ -150,22 +174,40 @@ public class FunctionalTests
     public async Task GetItemsByColumnValuesWithUpdates_Should_Be_OkAsync()
     {
         // Arrange
+        Item item = new()
+        {
+            Name = "Test Item Create 2",
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text_mkmn7km4",
+                        Text = "FROM UNIT TEST"
+                    }
+                }
+            ]
+        };
+
+        // Act
+        NET.Application.MondayResponse<Item> mondayResponse =
+            await MondayClient!.CreateBoardItemsAsync(BoardId,
+                [item]); //hard-coded BoardID to properly match the fields of a test-Board
+        
+        // Arrange
         ColumnValue[] columnValues =
         [
-            new ColumnValue()
+            new()
             {
-                Id = "text0",
-                Text = "Andrew Eberle"
-            },
-            new ColumnValue()
-            {
-                Id = "numbers9",
-                Text = "10"
+                Id = "text_mkmn7km4",
+                Text = "FROM UNIT TEST"
             },
         ];
 
         // Act
-        NET.Application.MondayResponse<TestRowWithUpdates> items = await this.MondayClient!.GetBoardItemsAsync<TestRowWithUpdates>(this.BoardId, columnValues);
+        NET.Application.MondayResponse<TestRowWithUpdates> items =
+            await MondayClient!.GetBoardItemsAsync<TestRowWithUpdates>(BoardId, columnValues);
 
         // Assert
         Assert.IsTrue(items.Response?.Count > 0);
@@ -179,39 +221,22 @@ public class FunctionalTests
         Item newItem = new()
         {
             Name = "Test Item 1",
-            Group = new Group() { Id = "new_group53864" },
             ColumnValues =
             [
                 new ColumnValue()
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Andrew Eberle"
-                    },
-                },
-                new ColumnValue()
-                {
-                    ColumnBaseType = new ColumnNumber()
-                    {
-                        Id = "numbers9",
-                        Number = 10
-                    },
-                },
-                new ColumnValue()
-                {
-                    ColumnBaseType = new ColumnRating()
-                    {
-                        Id = "rating",
-                        Rating = MondayRating.Five
                     }
-                }
+                },
             ]
         };
 
         // Create the item
         NET.Application.MondayResponse<Item> mondayResponseCreate =
-            await this.MondayClient!.CreateBoardItemsAsync(BoardId, [newItem]);
+            await MondayClient!.CreateBoardItemsAsync(BoardId, [newItem]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
@@ -222,7 +247,7 @@ public class FunctionalTests
         // Assign the id to the item
         ulong boardItemId = mondayResponseCreate.Response.FirstOrDefault()?.Data?.Id ?? 0;
 
-        NET.Application.MondayResponse<TestRow> item = await this.MondayClient!.GetBoardItemAsync<TestRow>(boardItemId);
+        NET.Application.MondayResponse<TestRow> item = await MondayClient!.GetBoardItemAsync<TestRow>(boardItemId);
 
         // Assert
         Assert.IsTrue(item.Response != null);
@@ -235,7 +260,7 @@ public class FunctionalTests
         // Arrange
 
         // Act
-        NET.Application.MondayResponse<TestRow> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId, 25);
+        NET.Application.MondayResponse<TestRow> items = await MondayClient!.GetBoardItemsAsync<TestRow>(BoardId, 25);
 
         // Assert
         Assert.IsTrue(items.Response?.Count > 0);
@@ -273,17 +298,23 @@ public class FunctionalTests
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("date").GetProperty("date").GetString() == "2023-11-29");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("text0").GetString() == "Andrew Eberle");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("numbers").GetString() == "10");
-        Assert.IsTrue(jsonDocument.RootElement.GetProperty("long_text7").GetProperty("text").GetString() == "hello,world!");
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("long_text7").GetProperty("text").GetString() ==
+                      "hello,world!");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("status_19").GetProperty("label").GetString() == "Test");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("label").GetProperty("label").GetString() == "Test");
-        Assert.IsTrue(jsonDocument.RootElement.GetProperty("long_text").GetProperty("text").GetString() == "long text with return ");
-        Assert.IsTrue(jsonDocument.RootElement.GetProperty("dropdown").GetProperty("labels").EnumerateArray().Count() == 2);
-        Assert.IsTrue(jsonDocument.RootElement.GetProperty("link").GetProperty("url").GetString() == "https://www.google.com");
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("long_text").GetProperty("text").GetString() ==
+                      "long text with return ");
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("dropdown").GetProperty("labels").EnumerateArray().Count() ==
+                      2);
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("link").GetProperty("url").GetString() ==
+                      "https://www.google.com");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("link").GetProperty("text").GetString() == "google!");
-        Assert.IsTrue(jsonDocument.RootElement.GetProperty("tags").GetProperty("tag_ids").EnumerateArray().Count() == 2);
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("tags").GetProperty("tag_ids").EnumerateArray().Count() ==
+                      2);
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("timeline").GetProperty("from").GetString() == "2023-11-29");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("timeline").GetProperty("to").GetString() == "2023-12-29");
-        Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("email").GetString() == "andreweberle@email.com.au");
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("email").GetString() ==
+                      "andreweberle@email.com.au");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("text").GetString() == "hello world!");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("rating").GetProperty("rating").GetInt32() == 0);
     }
@@ -292,8 +323,9 @@ public class FunctionalTests
     public async Task CreateMultipleItemsMutation_Should_Be_Ok()
     {
         // Arrange
-        Item[] items = [
-            new Item()
+        Item[] items =
+        [
+            new()
             {
                 Name = "Test Item 1",
                 Group = new Group() { Id = "new_group53864" },
@@ -305,7 +337,7 @@ public class FunctionalTests
                         {
                             Id = "text0",
                             Text = "Andrew Eberle"
-                        },
+                        }
                     },
                     new ColumnValue()
                     {
@@ -313,7 +345,7 @@ public class FunctionalTests
                         {
                             Id = "numbers9",
                             Number = 10
-                        },
+                        }
                     },
                     new ColumnValue()
                     {
@@ -325,7 +357,7 @@ public class FunctionalTests
                     }
                 ]
             },
-            new Item()
+            new()
             {
                 Name = "Test Item 2",
                 Group = new Group() { Id = "new_group22583" },
@@ -337,7 +369,7 @@ public class FunctionalTests
                         {
                             Id = "text0",
                             Text = "Eberle Andrew"
-                        },
+                        }
                     },
                     new ColumnValue()
                     {
@@ -345,7 +377,7 @@ public class FunctionalTests
                         {
                             Id = "numbers9",
                             Number = 11
-                        },
+                        }
                     },
                     new ColumnValue()
                     {
@@ -354,7 +386,7 @@ public class FunctionalTests
                             Id = "email",
                             Email = "andreweberle@email.com.au",
                             Message = "Andrew Eberle"
-                        },
+                        }
                     },
                     new ColumnValue()
                     {
@@ -370,7 +402,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<Item> mondayResponse =
-            await this.MondayClient!.CreateBoardItemsAsync(BoardId, items);
+            await MondayClient!.CreateBoardItemsAsync(BoardId, items);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -384,13 +416,14 @@ public class FunctionalTests
     public async Task CreateItemUpdate_Should_Be_Ok()
     {
         // Arrange
-        Update[] updates = [
-            new Update()
+        Update[] updates =
+        [
+            new()
             {
                 ItemId = 5718383580,
                 TextBody = "Test Update 1"
             },
-            new Update()
+            new()
             {
                 ItemId = 5718383580,
                 TextBody = "Test Update 2"
@@ -398,7 +431,7 @@ public class FunctionalTests
         ];
 
         // Act
-        NET.Application.MondayResponse<Update> mondayResponse = await this.MondayClient!.CreateItemsUpdateAsync(updates);
+        NET.Application.MondayResponse<Update> mondayResponse = await MondayClient!.CreateItemsUpdateAsync(updates);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -412,35 +445,28 @@ public class FunctionalTests
     [TestMethod]
     public async Task DeleteItem_Should_Be_Ok()
     {
+        await this.TestBoard_CreateItem_Should_Be_Ok();
+        
         // Arrange
         Item item = new()
         {
             Name = "Test Item 1",
-            Group = new Group() { Id = "new_group53864" },
             ColumnValues =
             [
                 new ColumnValue()
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
-                        Text = "Andrew Eberle"
-                    },
-                },
-                new ColumnValue()
-                {
-                    ColumnBaseType = new ColumnNumber()
-                    {
-                        Id = "numbers9",
-                        Number = 10
-                    },
+                        Id = "text_mkmn7km4",
+                        Text = "FROM UNIT TEST"
+                    }
                 },
             ]
         };
 
         // Act
         NET.Application.MondayResponse<Item> mondayResponse =
-            await this.MondayClient!.CreateBoardItemsAsync(this.BoardId, [item]);
+            await MondayClient!.CreateBoardItemsAsync(BoardId, [item]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -449,7 +475,7 @@ public class FunctionalTests
         Assert.IsTrue(item.Id > 0);
 
         // Act
-        mondayResponse = await this.MondayClient!.DeleteItemsAsync([item]);
+        mondayResponse = await MondayClient!.DeleteItemsAsync([item]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -474,7 +500,7 @@ public class FunctionalTests
                     {
                         Id = "text0",
                         Text = "Andrew Eberle"
-                    },
+                    }
                 },
                 new ColumnValue()
                 {
@@ -482,8 +508,8 @@ public class FunctionalTests
                     {
                         Id = "numbers9",
                         Number = 10
-                    },
-                },
+                    }
+                }
             ]
         };
         Item item2 = new()
@@ -498,7 +524,7 @@ public class FunctionalTests
                     {
                         Id = "text0",
                         Text = "Eberle Andrew"
-                    },
+                    }
                 },
                 new ColumnValue()
                 {
@@ -506,14 +532,14 @@ public class FunctionalTests
                     {
                         Id = "numbers9",
                         Number = 11
-                    },
-                },
+                    }
+                }
             ]
         };
 
         // Create the items
         NET.Application.MondayResponse<Item> mondayResponseCreate =
-            await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item, item2]);
+            await MondayClient!.CreateBoardItemsAsync(BoardId, [item, item2]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
@@ -528,7 +554,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<Item> mondayResponse =
-            await this.MondayClient!.DeleteItemsAsync([item, item2]);
+            await MondayClient!.DeleteItemsAsync([item, item2]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -544,11 +570,11 @@ public class FunctionalTests
         // Arrange
         // Act
         NET.Application.MondayResponse<Board> mondayResponse =
-            await this.MondayClient!.GetBoardsAsync([this.BoardId]);
+            await MondayClient!.GetBoardsAsync([BoardId]);
 
         // Assert
         Assert.IsTrue(mondayResponse.Response?.Count == 1);
-        Assert.IsTrue(mondayResponse.Response.FirstOrDefault()?.Data?.Id == this.BoardId);
+        Assert.IsTrue(mondayResponse.Response.FirstOrDefault()?.Data?.Id == BoardId);
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Errors is null);
     }
@@ -558,7 +584,7 @@ public class FunctionalTests
     {
         // Arrange
         // Act
-        NET.Application.MondayResponse<Board> boards = await this.MondayClient!.GetBoardsAsync();
+        NET.Application.MondayResponse<Board> boards = await MondayClient!.GetBoardsAsync();
 
         // Assert
         Assert.IsTrue(boards.Response?.Count <= 10);
@@ -580,7 +606,7 @@ public class FunctionalTests
                     {
                         Id = "text0",
                         Text = "Andrew Eberle"
-                    },
+                    }
                 },
                 new ColumnValue()
                 {
@@ -588,8 +614,8 @@ public class FunctionalTests
                     {
                         Id = "numbers9",
                         Number = 10
-                    },
-                },
+                    }
+                }
             ]
         };
         Item item1 = new()
@@ -604,7 +630,7 @@ public class FunctionalTests
                     {
                         Id = "text0",
                         Text = "Andrew Eberle"
-                    },
+                    }
                 },
                 new ColumnValue()
                 {
@@ -612,14 +638,14 @@ public class FunctionalTests
                     {
                         Id = "numbers9",
                         Number = 10
-                    },
-                },
+                    }
+                }
             ]
         };
 
         // Create the item
         NET.Application.MondayResponse<Item> mondayResponseCreate =
-            await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item, item1]);
+            await MondayClient!.CreateBoardItemsAsync(BoardId, [item, item1]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
@@ -651,7 +677,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<Asset> uploadFilesMondayResponse =
-            await this.MondayClient!.UploadFileToColumnAsync([item, item1]);
+            await MondayClient!.UploadFileToColumnAsync([item, item1]);
 
         // Assert
         Assert.IsTrue(uploadFilesMondayResponse.Response?.Count == 2);
@@ -660,7 +686,7 @@ public class FunctionalTests
 
         // Delete the item
         NET.Application.MondayResponse<Item> mondayResponseDelete =
-            await this.MondayClient!.DeleteItemsAsync([item, item1]);
+            await MondayClient!.DeleteItemsAsync([item, item1]);
 
         // Assert
         Assert.IsTrue(mondayResponseDelete.IsSuccessful);
@@ -696,7 +722,7 @@ public class FunctionalTests
                     {
                         Id = "text0",
                         Text = "Andrew Eberle"
-                    },
+                    }
                 },
                 new ColumnValue()
                 {
@@ -704,14 +730,14 @@ public class FunctionalTests
                     {
                         Id = "numbers9",
                         Number = 10
-                    },
-                },
+                    }
+                }
             ]
         };
 
         // Create the item
         NET.Application.MondayResponse<Item> mondayResponseCreate =
-            await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item]);
+            await MondayClient!.CreateBoardItemsAsync(BoardId, [item]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
@@ -728,7 +754,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<Update> mondayResponse =
-            await this.MondayClient!.CreateItemsUpdateAsync([update]);
+            await MondayClient!.CreateItemsUpdateAsync([update]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -740,17 +766,19 @@ public class FunctionalTests
         Update update0 = new()
         {
             ItemId = mondayResponse.Response.FirstOrDefault()?.Data?.Id,
-            FileUpload = new FileUpload() { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
+            FileUpload = new FileUpload()
+                { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
         Update update1 = new()
         {
             ItemId = mondayResponse.Response.FirstOrDefault()?.Data?.Id,
-            FileUpload = new FileUpload() { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
+            FileUpload = new FileUpload()
+                { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
 
         // Act
         NET.Application.MondayResponse<Asset> uploadFilesMondayResponse =
-            await this.MondayClient!.UploadFileToUpdateAsync([update0, update1]);
+            await MondayClient!.UploadFileToUpdateAsync([update0, update1]);
 
         // Assert
         Assert.IsTrue(uploadFilesMondayResponse.Response?.Count == 2);
@@ -759,7 +787,7 @@ public class FunctionalTests
 
         // Delete the item
         NET.Application.MondayResponse<Item> mondayResponseDelete =
-            await this.MondayClient!.DeleteItemsAsync([item]);
+            await MondayClient!.DeleteItemsAsync([item]);
 
         // Assert
         Assert.IsTrue(mondayResponseDelete.IsSuccessful);
@@ -833,7 +861,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<TestRow> mondayResponse =
-            await this.MondayClient!.CreateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
+            await MondayClient!.CreateBoardItemsAsync<TestRow>(BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -907,7 +935,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<TestRow> mondayResponse =
-            await this.MondayClient!.CreateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
+            await MondayClient!.CreateBoardItemsAsync<TestRow>(BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -931,7 +959,7 @@ public class FunctionalTests
         testRow.Name = "Updated Item";
 
         // Attempt To Update The Item.
-        mondayResponse = await this.MondayClient!.UpdateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
+        mondayResponse = await MondayClient!.UpdateBoardItemsAsync<TestRow>(BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -1005,7 +1033,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<TestRow> mondayResponse =
-            await this.MondayClient!.CreateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
+            await MondayClient!.CreateBoardItemsAsync<TestRow>(BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -1052,7 +1080,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<TestSubRow> mondayResponseSubRow =
-            await this.MondayClient!.CreateBoardSubItemsAsync<TestSubRow>(
+            await MondayClient!.CreateBoardSubItemsAsync<TestSubRow>(
                 mondayResponse.Response?.FirstOrDefault()?.Data?.Id ?? 0, [testSubRow0, testSubRow1]);
 
         // Assert
@@ -1060,7 +1088,8 @@ public class FunctionalTests
         Assert.IsTrue(mondayResponseSubRow.Response?.Count == 2);
         Assert.IsTrue(mondayResponseSubRow.Response?.FirstOrDefault()?.Data?.Name == testSubRow0.Name);
         Assert.IsTrue(mondayResponseSubRow.Response?.LastOrDefault()?.Data?.Name == testSubRow1.Name);
-        Assert.IsTrue(mondayResponseSubRow.Response?.LastOrDefault()?.Data?.Id > mondayResponseSubRow.Response?.FirstOrDefault()?.Data?.Id);
+        Assert.IsTrue(mondayResponseSubRow.Response?.LastOrDefault()?.Data?.Id >
+                      mondayResponseSubRow.Response?.FirstOrDefault()?.Data?.Id);
         Assert.IsNull(mondayResponseSubRow.Errors);
     }
 
@@ -1079,7 +1108,7 @@ public class FunctionalTests
                     {
                         Id = "text0",
                         Text = "Andrew Eberle"
-                    },
+                    }
                 },
                 new ColumnValue()
                 {
@@ -1087,14 +1116,14 @@ public class FunctionalTests
                     {
                         Id = "numbers9",
                         Number = 10
-                    },
-                },
+                    }
+                }
             ]
         };
 
         // Create the item
         NET.Application.MondayResponse<Item> mondayResponseCreate =
-            await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item]);
+            await MondayClient!.CreateBoardItemsAsync(BoardId, [item]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
@@ -1114,7 +1143,7 @@ public class FunctionalTests
                     {
                         Id = "status__1",
                         Text = "Andrew Eberle"
-                    },
+                    }
                 },
                 new ColumnValue()
                 {
@@ -1122,7 +1151,7 @@ public class FunctionalTests
                     {
                         Id = "date6",
                         Date = new DateTime(2023, 11, 29)
-                    },
+                    }
                 },
                 new ColumnValue()
                 {
@@ -1130,8 +1159,8 @@ public class FunctionalTests
                     {
                         Id = "numbers8",
                         Number = 10
-                    },
-                },
+                    }
+                }
             ]
         };
 
@@ -1147,7 +1176,7 @@ public class FunctionalTests
                     {
                         Id = "status__1",
                         Text = "Andrew Eberle"
-                    },
+                    }
                 },
                 new ColumnValue()
                 {
@@ -1155,7 +1184,7 @@ public class FunctionalTests
                     {
                         Id = "date6",
                         Date = new DateTime(2023, 11, 29)
-                    },
+                    }
                 },
                 new ColumnValue()
                 {
@@ -1163,22 +1192,23 @@ public class FunctionalTests
                     {
                         Id = "numbers8",
                         Number = 10
-                    },
-                },
+                    }
+                }
             ]
         };
 
         // Act
         NET.Application.MondayResponse<Item> mondayResponseSubItem =
-            await this.MondayClient!.CreateBoardSubItemsAsync(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.Id ?? 0,
-            [subItem1, subItem2]);
+            await MondayClient!.CreateBoardSubItemsAsync(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.Id ?? 0,
+                [subItem1, subItem2]);
 
         // Assert
         Assert.IsTrue(mondayResponseSubItem.IsSuccessful);
         Assert.IsTrue(mondayResponseSubItem.Response?.Count == 2);
         Assert.IsTrue(mondayResponseSubItem.Response?.FirstOrDefault()?.Data?.Name == subItem1.Name);
         Assert.IsTrue(mondayResponseSubItem.Response?.LastOrDefault()?.Data?.Name == subItem2.Name);
-        Assert.IsTrue(mondayResponseSubItem.Response?.LastOrDefault()?.Data?.Id > mondayResponseSubItem.Response?.FirstOrDefault()?.Data?.Id);
+        Assert.IsTrue(mondayResponseSubItem.Response?.LastOrDefault()?.Data?.Id >
+                      mondayResponseSubItem.Response?.FirstOrDefault()?.Data?.Id);
         Assert.IsNull(mondayResponseSubItem.Errors);
     }
 
@@ -1186,13 +1216,15 @@ public class FunctionalTests
     public async Task ZZZCleanup()
     {
         // Get All Items
-        NET.Application.MondayResponse<TestRow> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId);
+        NET.Application.MondayResponse<TestRow> items = await MondayClient!.GetBoardItemsAsync<TestRow>(BoardId);
 
         // Delete All Items
-        await this.MondayClient!.DeleteItemsAsync([.. items.Response?.Select(x => new Item()
-        {
-            Id = x.Data!.Id
-        })]);
+        await MondayClient!.DeleteItemsAsync([
+            .. items.Response?.Select(x => new Item()
+            {
+                Id = x.Data!.Id
+            })
+        ]);
     }
 
     // Create Item Using Item Object
@@ -1203,58 +1235,29 @@ public class FunctionalTests
         Item item = new()
         {
             Name = "Test Item Create 2",
-            Group = new Group()
-            {
-                Id = "topics"
-            },
             ColumnValues =
             [
                 new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnText()
-                 {
-                     Id = "text__1",
-                     Text = "FROM UNIT TEST"
-                 },
-             },
-                new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnStatus()
-                 {
-                     Id = "status",
-                     StatusId = 1
-                 },
-             },
-                new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnDateTime()
-                 {
-                     Id = "date4",
-                    Date = DateTime.Now
-                 },
-             },
-
-                new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnDropDown()
-                 {
-                     Id = "dropdown__1",
-                    LabelId = 1
-                 },
-             },
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text_mkmn7km4",
+                        Text = "FROM UNIT TEST"
+                    }
+                }
             ]
         };
 
         // Act
         NET.Application.MondayResponse<Item> mondayResponse =
-            await this.MondayClient!.CreateBoardItemsAsync(7576410510, [item]); //hard-coded BoardID to properly match the fields of a test-Board
+            await MondayClient!.CreateBoardItemsAsync(BoardId,
+                [item]); //hard-coded BoardID to properly match the fields of a test-Board
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == item.Name);
         Assert.IsNull(mondayResponse.Errors);
-
     }
 
     // Create Item Using Custom-Row
@@ -1265,39 +1268,22 @@ public class FunctionalTests
         MondayTestRow testRow = new()
         {
             Name = "Test Item Create",
-            Group = new Group()
-            {
-                Id = "topics"
-            },
             Text = new ColumnText()
             {
+                Id = "text_mkmn7km4",
                 Text = "FROM UNIT TEST"
-            },
-            Date = new ColumnDateTime()
-            {
-                Date = DateTime.Now
-            },
-            Dropdown = new ColumnDropDown()
-            {
-                LabelId = 0
-            },
-            Status = new ColumnStatus()
-            {
-                StatusId = 1,
-            },
-            Files = new ColumnFile()
+            }
         };
 
         // Act
         NET.Application.MondayResponse<MondayTestRow> mondayResponse =
-            await this.MondayClient!.CreateBoardItemsAsync<MondayTestRow>(7576410510, [testRow]);
+            await MondayClient!.CreateBoardItemsAsync<MondayTestRow>(this.BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
         Assert.IsNull(mondayResponse.Errors);
-
     }
 
     // Update Item - Test case for issue # 10
@@ -1326,14 +1312,14 @@ public class FunctionalTests
             },
             Status = new ColumnStatus()
             {
-                StatusId = 1,
+                StatusId = 1
             },
             Files = new ColumnFile()
         };
 
         // Act
         NET.Application.MondayResponse<MondayTestRow> mondayResponse =
-            await this.MondayClient!.CreateBoardItemsAsync<MondayTestRow>(7576410510, [testRow]);
+            await MondayClient!.CreateBoardItemsAsync<MondayTestRow>(this.BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -1346,7 +1332,7 @@ public class FunctionalTests
         testRow.Dropdown.LabelId = 2;
 
         // Attempt To Update The Item.
-        mondayResponse = await this.MondayClient!.UpdateBoardItemsAsync<MondayTestRow>(7576410510, [testRow]);
+        mondayResponse = await MondayClient!.UpdateBoardItemsAsync<MondayTestRow>(this.BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -1381,14 +1367,14 @@ public class FunctionalTests
             },
             Status = new ColumnStatus()
             {
-                StatusId = 1,
+                StatusId = 1
             },
             Files = new ColumnFile()
         };
 
         // Act
         NET.Application.MondayResponse<MondayTestRow> mondayResponse =
-            await this.MondayClient!.CreateBoardItemsAsync<MondayTestRow>(7576410510, [testRow]);
+            await MondayClient!.CreateBoardItemsAsync<MondayTestRow>(this.BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -1402,7 +1388,7 @@ public class FunctionalTests
         testRow.Dropdown.LabelId = 2;
 
         // Attempt To Update The Item.
-        mondayResponse = await this.MondayClient!.UpdateBoardItemsAsync<MondayTestRow>(7576410510, [testRow]);
+        mondayResponse = await MondayClient!.UpdateBoardItemsAsync<MondayTestRow>(this.BoardId, [testRow]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -1426,45 +1412,45 @@ public class FunctionalTests
             ColumnValues =
             [
                 new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnText()
-                 {
-                     Id = "text__1",
-                     Text = "Created with VS Test Case"
-                 },
-             },
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text__1",
+                        Text = "Created with VS Test Case"
+                    }
+                },
                 new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnStatus()
-                 {
-                     Id = "status",
-                     StatusId = 1
-                 },
-             },
+                {
+                    ColumnBaseType = new ColumnStatus()
+                    {
+                        Id = "status",
+                        StatusId = 1
+                    }
+                },
                 new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnDateTime()
-                 {
-                     Id = "date4",
-                    Date = DateTime.Now
-                 },
-             },
+                {
+                    ColumnBaseType = new ColumnDateTime()
+                    {
+                        Id = "date4",
+                        Date = DateTime.Now
+                    }
+                },
 
                 new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnDropDown()
-                 {
-                     Id = "dropdown__1",
-                    LabelId = 1
-                 },
-             },
+                {
+                    ColumnBaseType = new ColumnDropDown()
+                    {
+                        Id = "dropdown__1",
+                        LabelId = 1
+                    }
+                }
             ]
         };
 
 
         // Create the item
         NET.Application.MondayResponse<Item> mondayResponseCreate =
-            await this.MondayClient!.CreateBoardItemsAsync(7576410510, [item]);
+            await MondayClient!.CreateBoardItemsAsync(this.BoardId, [item]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
@@ -1485,7 +1471,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<Asset> uploadFilesMondayResponse =
-            await this.MondayClient!.UploadFileToColumnAsync([item]);
+            await MondayClient!.UploadFileToColumnAsync([item]);
 
         // Assert
         Assert.IsTrue(uploadFilesMondayResponse.Response?.Count == 1);
@@ -1508,44 +1494,44 @@ public class FunctionalTests
             ColumnValues =
             [
                 new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnText()
-                 {
-                     Id = "text__1",
-                     Text = "Update With File"
-                 },
-             },
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text__1",
+                        Text = "Update With File"
+                    }
+                },
                 new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnStatus()
-                 {
-                     Id = "status",
-                     StatusId = 1
-                 },
-             },
+                {
+                    ColumnBaseType = new ColumnStatus()
+                    {
+                        Id = "status",
+                        StatusId = 1
+                    }
+                },
                 new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnDateTime()
-                 {
-                     Id = "date4",
-                    Date = DateTime.Now
-                 },
-             },
+                {
+                    ColumnBaseType = new ColumnDateTime()
+                    {
+                        Id = "date4",
+                        Date = DateTime.Now
+                    }
+                },
 
                 new ColumnValue()
-             {
-                 ColumnBaseType = new ColumnDropDown()
-                 {
-                     Id = "dropdown__1",
-                    LabelId = 1
-                 },
-             },
+                {
+                    ColumnBaseType = new ColumnDropDown()
+                    {
+                        Id = "dropdown__1",
+                        LabelId = 1
+                    }
+                }
             ]
         };
 
         // Act
         NET.Application.MondayResponse<Item> mondayResponseCreate =
-            await this.MondayClient!.CreateBoardItemsAsync(7576410510, [item]);
+            await MondayClient!.CreateBoardItemsAsync(this.BoardId, [item]);
 
         // Assert
         Assert.IsTrue(mondayResponseCreate.IsSuccessful);
@@ -1562,7 +1548,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<Update> mondayResponse =
-            await this.MondayClient!.CreateItemsUpdateAsync([update]);
+            await MondayClient!.CreateItemsUpdateAsync([update]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -1575,12 +1561,13 @@ public class FunctionalTests
         Update update0 = new()
         {
             ItemId = mondayResponse.Response.FirstOrDefault()?.Data?.Id,
-            FileUpload = new FileUpload() { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
+            FileUpload = new FileUpload()
+                { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
 
         // Act
         NET.Application.MondayResponse<Asset> uploadFilesMondayResponse =
-            await this.MondayClient!.UploadFileToUpdateAsync([update0]);
+            await MondayClient!.UploadFileToUpdateAsync([update0]);
 
         // Assert
         Assert.IsTrue(uploadFilesMondayResponse.Response?.Count == 1);
@@ -1601,7 +1588,7 @@ public class FunctionalTests
 
         // Act
         NET.Application.MondayResponse<Item> mondayResponse =
-            await this.MondayClient!.CreateBoardItemsAsync(7576410510, [item]);
+            await MondayClient!.CreateBoardItemsAsync(this.BoardId, [item]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -1610,7 +1597,7 @@ public class FunctionalTests
         Assert.IsTrue(item.Id > 0);
 
         // Act
-        mondayResponse = await this.MondayClient!.DeleteItemsAsync([item]);
+        mondayResponse = await MondayClient!.DeleteItemsAsync([item]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -1624,75 +1611,62 @@ public class FunctionalTests
     {
         public Group? Group { get; set; }
     }
+
     public record TestRowWithAssets : TestRow
     {
         public List<Asset>? Assets { get; set; }
     }
+
     public record TestRowWithUpdates : TestRow
     {
         public List<Update>? Updates { get; set; }
     }
+
     public record TestRow : MondayRow
     {
-        [MondayColumnHeader("text0")]
-        public ColumnText? Text { get; set; }
+        [MondayColumnHeader("text0")] public ColumnText? Text { get; set; }
 
-        [MondayColumnHeader("numbers9")]
-        public ColumnNumber? Number { get; set; }
+        [MondayColumnHeader("numbers9")] public ColumnNumber? Number { get; set; }
 
-        [MondayColumnHeader("checkbox")]
-        public ColumnCheckBox? Checkbox { get; set; }
+        [MondayColumnHeader("checkbox")] public ColumnCheckBox? Checkbox { get; set; }
 
-        [MondayColumnHeader("priority")]
-        public ColumnStatus? Priority { get; set; }
+        [MondayColumnHeader("priority")] public ColumnStatus? Priority { get; set; }
 
-        [MondayColumnHeader("status")]
-        public ColumnStatus? Status { get; set; }
+        [MondayColumnHeader("status")] public ColumnStatus? Status { get; set; }
 
-        [MondayColumnHeader("link2")]
-        public ColumnLink? Link { get; set; }
+        [MondayColumnHeader("link2")] public ColumnLink? Link { get; set; }
 
-        [MondayColumnHeader("dropdown")]
-        public ColumnDropDown? Dropdown { get; set; }
+        [MondayColumnHeader("dropdown")] public ColumnDropDown? Dropdown { get; set; }
 
-        [MondayColumnHeader("date")]
-        public ColumnDateTime? Date { get; set; }
+        [MondayColumnHeader("date")] public ColumnDateTime? Date { get; set; }
 
-        [MondayColumnHeader("long_text")]
-        public ColumnLongText? LongText { get; set; }
+        [MondayColumnHeader("long_text")] public ColumnLongText? LongText { get; set; }
 
-        [MondayColumnHeader("color_picker")]
-        public ColumnColorPicker? ColorPicker { get; set; }
+        [MondayColumnHeader("color_picker")] public ColumnColorPicker? ColorPicker { get; set; }
 
-        [MondayColumnHeader("timeline")]
-        public ColumnTimeline? Timeline { get; set; }
+        [MondayColumnHeader("timeline")] public ColumnTimeline? Timeline { get; set; }
 
-        [MondayColumnHeader("tags")]
-        public ColumnTag? Tags { get; set; }
+        [MondayColumnHeader("tags")] public ColumnTag? Tags { get; set; }
 
-        [MondayColumnHeader("email")]
-        public ColumnEmail? Email { get; set; }
+        [MondayColumnHeader("email")] public ColumnEmail? Email { get; set; }
 
-        [MondayColumnHeader("rating")]
-        public ColumnRating? Rating { get; set; }
+        [MondayColumnHeader("rating")] public ColumnRating? Rating { get; set; }
     }
+
     public record Test2Row : MondayRow
     {
-        [MondayColumnHeader("text0")]
-        public ColumnText? Text { get; set; }
+        [MondayColumnHeader("text0")] public ColumnText? Text { get; set; }
 
         public Group? Group { get; set; }
     }
+
     public record TestSubRow : MondayRow
     {
-        [MondayColumnHeader("status__1")]
-        public ColumnText? Status { get; set; }
+        [MondayColumnHeader("status__1")] public ColumnText? Status { get; set; }
 
-        [MondayColumnHeader("date6")]
-        public ColumnDateTime? DueDate { get; set; }
+        [MondayColumnHeader("date6")] public ColumnDateTime? DueDate { get; set; }
 
-        [MondayColumnHeader("numbers8")]
-        public ColumnNumber? Priority { get; set; }
+        [MondayColumnHeader("numbers8")] public ColumnNumber? Priority { get; set; }
     }
 
     // Fields currently on Test-Board
@@ -1700,39 +1674,14 @@ public class FunctionalTests
     {
         public Group? Group { get; set; }
 
-        [MondayColumnHeader("status")]
-        public ColumnStatus? Status { get; set; }
+        [MondayColumnHeader("status")] public ColumnStatus? Status { get; set; }
 
-        [MondayColumnHeader("date4")]
-        public ColumnDateTime? Date { get; set; }
+        [MondayColumnHeader("date4")] public ColumnDateTime? Date { get; set; }
 
-        [MondayColumnHeader("dropdown__1")]
-        public ColumnDropDown? Dropdown { get; set; }
+        [MondayColumnHeader("dropdown__1")] public ColumnDropDown? Dropdown { get; set; }
 
-        [MondayColumnHeader("text__1")]
-        public ColumnText? Text { get; set; }
+        [MondayColumnHeader("text__1")] public ColumnText? Text { get; set; }
 
-        [MondayColumnHeader("files9__1")]
-        public ColumnFile? Files { get; set; }
-    }
-
-    [TestMethod]
-    public async Task Test()
-    {
-        NET.Application.MondayResponse<Customer> items = await this.MondayClient.GetBoardItemsAsync<Customer>(5452174804, 100);
-        var item = items.Response.FirstOrDefault();
-
-        List<Customer> customers = new List<Customer>();
-        Customer customer = item.Data;
-        customer.Name = "Updated name";
-        customers.Add(customer);
-        var updatedItem = await this.MondayClient.UpdateBoardItemsAsync<Customer>(5452174804, customers.ToArray());
-    }
-
-
-    public record Customer : MondayRow
-    {
-        [MondayColumnHeader("text_mkmn7km4")]
-        public ColumnText? XeroId { get; set; }
+        [MondayColumnHeader("files9__1")] public ColumnFile? Files { get; set; }
     }
 }

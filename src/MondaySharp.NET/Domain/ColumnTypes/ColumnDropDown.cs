@@ -2,7 +2,10 @@
 
 public record ColumnDropDown : ColumnBaseType
 {
-    public ColumnDropDown() { }
+    public ColumnDropDown()
+    {
+    }
+
     public string? Label { get; set; }
     public int? LabelId { get; set; }
     public string[]? Labels { get; set; }
@@ -14,9 +17,9 @@ public record ColumnDropDown : ColumnBaseType
     /// <param name="labelId"></param>
     public ColumnDropDown(string? id, int? labelId)
     {
-        this.Id = id;
-        this.LabelId = labelId;
-        this.Labels = [];
+        Id = id;
+        LabelId = labelId;
+        Labels = [];
     }
 
     /// <summary>
@@ -26,11 +29,11 @@ public record ColumnDropDown : ColumnBaseType
     /// <param name="label"></param>
     public ColumnDropDown(string? id, string? label)
     {
-        this.Id = id;
-        this.Label = label;
-        this.Labels = this.Label?
+        Id = id;
+        Label = label;
+        Labels = Label?
             .Split(',', StringSplitOptions.TrimEntries
-                | StringSplitOptions.RemoveEmptyEntries) ?? [];
+                        | StringSplitOptions.RemoveEmptyEntries) ?? [];
     }
 
     /// <summary>
@@ -40,8 +43,8 @@ public record ColumnDropDown : ColumnBaseType
     /// <param name="labels">Labels are case sensitive</param>
     public ColumnDropDown(string? id, string[] labels)
     {
-        this.Id = id;
-        this.Labels = labels;
+        Id = id;
+        Labels = labels;
     }
 
     /// <summary>
@@ -50,29 +53,29 @@ public record ColumnDropDown : ColumnBaseType
     /// <param name="id"></param>
     public ColumnDropDown(string? id)
     {
-        this.Id = id;
-        this.Labels = [];
+        Id = id;
+        Labels = [];
     }
 
     public override string ToString()
     {
-        if (this.Label != null)
+        if (Label != null)
         {
-            return $"\"{this.Id}\" : {{\"labels\":[\"{this.Label}\"]}}";
+            return $"\"{Id}\" : {{\"labels\":[\"{Label}\"]}}";
         }
 
-        if (this.Labels != null && this.Labels.Length > 0)
+        if (Labels != null && Labels.Length > 0)
         {
-            return $"\"{this.Id}\" : {{\"labels\":[{string.Join(",", this.Labels.Select(label => $"\"{label}\""))}]}}";
+            return $"\"{Id}\" : {{\"labels\":[{string.Join(",", Labels.Select(label => $"\"{label}\""))}]}}";
         }
 
-        if (this.LabelId != null)
+        if (LabelId != null)
         {
-            return $"\"{this.Id}\" : \"{this.LabelId}\"";
+            return $"\"{Id}\" : \"{LabelId}\"";
         }
         else
         {
-            return $"\"{this.Id}\" : null";
+            return $"\"{Id}\" : null";
         }
     }
 }

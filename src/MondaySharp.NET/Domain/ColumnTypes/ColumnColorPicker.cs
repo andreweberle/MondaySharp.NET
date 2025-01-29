@@ -1,5 +1,4 @@
-﻿
-using MondaySharp.NET.Application.Attributes;
+﻿using MondaySharp.NET.Application.Attributes;
 
 namespace MondaySharp.NET.Domain.ColumnTypes;
 
@@ -10,16 +9,18 @@ public record ColumnColorPicker : ColumnBaseType
 
     public ColumnColorPicker(string? id)
     {
-        this.Id = id;
+        Id = id;
     }
 
     public ColumnColorPicker(string? id, string? text)
     {
-        this.Id = id;
-        this.Color = text;
+        Id = id;
+        Color = text;
     }
 
-    public ColumnColorPicker() { }
+    public ColumnColorPicker()
+    {
+    }
 
     public override string ToString()
     {

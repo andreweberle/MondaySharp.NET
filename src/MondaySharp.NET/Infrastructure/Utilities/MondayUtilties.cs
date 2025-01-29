@@ -12,9 +12,11 @@ namespace MondaySharp.NET.Infrastructure.Utilities;
 
 public static partial class MondayUtilities
 {
-    [GeneratedRegexAttribute(@"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", RegexOptions.Compiled)]
+    [GeneratedRegexAttribute(@"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
+        RegexOptions.Compiled)]
     private static partial Regex UrlFromStringExtractor();
-    private static CultureInfo Culture => System.Globalization.CultureInfo.CurrentCulture;
+
+    private static CultureInfo Culture => CultureInfo.CurrentCulture;
 
     /// <summary>
     /// Extact's A Url From The Given String Type.
@@ -24,17 +26,17 @@ public static partial class MondayUtilities
 
     public static readonly Dictionary<Type, string> GetItemsQueryBuilder = new()
     {
-        { typeof(MondaySharp.NET.Application.Entities.Group), @"group { id title color archived deleted position }" },
-        { typeof(List<MondaySharp.NET.Application.Entities.Asset>), @"assets { id name public_url url_thumbnail created_at }" },
-        { typeof(List<MondaySharp.NET.Application.Entities.Update>), @"updates (limit: 100) { id text_body }" }
+        { typeof(Application.Entities.Group), @"group { id title color archived deleted position }" },
+        { typeof(List<Asset>), @"assets { id name public_url url_thumbnail created_at }" },
+        { typeof(List<Update>), @"updates (limit: 100) { id text_body }" }
     };
 
     // Define the supported types and their corresponding error messages
     public static readonly Dictionary<Type, string> UnsupportedTypes = new()
     {
-        { typeof(MondaySharp.NET.Application.Entities.Group), "Multiple Group Properties Are Not Supported." },
-        { typeof(List<MondaySharp.NET.Application.Entities.Asset>), "Multiple Asset Properties Are Not Supported." },
-        { typeof(List<MondaySharp.NET.Application.Entities.Update>), "Multiple Update Properties Are Not Supported." }
+        { typeof(Application.Entities.Group), "Multiple Group Properties Are Not Supported." },
+        { typeof(List<Asset>), "Multiple Asset Properties Are Not Supported." },
+        { typeof(List<Update>), "Multiple Update Properties Are Not Supported." }
     };
 
     /// <summary>
@@ -62,7 +64,7 @@ public static partial class MondayUtilities
         SetPropertyIfExists(destinationType, nameof(item.Updates), item.Updates, destination);
 
         foreach (ColumnValue? columnValue in item.ColumnValues
-            .Where(x => x.Type != Domain.Common.Enums.MondayColumnType.Subtasks))
+                     .Where(x => x.Type != MondayColumnType.Subtasks))
         {
             // Perform dictionary lookup once
             string columnId = columnValue.Id ?? string.Empty;
@@ -89,7 +91,8 @@ public static partial class MondayUtilities
     /// <param name="propertyName"></param>
     /// <param name="value"></param>
     /// <param name="destination"></param>
-    private static void SetPropertyIfExists<TValue, TDestination>(Type type, string propertyName, TValue value, TDestination destination)
+    private static void SetPropertyIfExists<TValue, TDestination>(Type type, string propertyName, TValue value,
+        TDestination destination)
     {
         PropertyInfo? property = type.GetProperty(propertyName);
         property?.SetValue(destination, value);
@@ -149,10 +152,12 @@ public static partial class MondayUtilities
                 return new ColumnText(column.Id, !string.IsNullOrEmpty(column.Text) ? column.Text : null);
 
             case MondayColumnType.Numbers:
-                return new ColumnNumber(column.Id, !string.IsNullOrEmpty(column.Text) ? Convert.ToSingle(column.Text ?? "0") : null);
+                return new ColumnNumber(column.Id,
+                    !string.IsNullOrEmpty(column.Text) ? Convert.ToSingle(column.Text ?? "0") : null);
 
             case MondayColumnType.Date:
-                return new ColumnDateTime(column.Id, !string.IsNullOrEmpty(column.Text) ? Convert.ToDateTime(column.Text) : null);
+                return new ColumnDateTime(column.Id,
+                    !string.IsNullOrEmpty(column.Text) ? Convert.ToDateTime(column.Text) : null);
 
             case MondayColumnType.Checkbox:
                 return new ColumnCheckBox(column.Id, !string.IsNullOrEmpty(column.Text) && column.Text == "v");
@@ -224,7 +229,8 @@ public static partial class MondayUtilities
             case MondayColumnType.Email:
                 if (!string.IsNullOrEmpty(column.Text))
                 {
-                    string[] parts = column.Text.Split('-', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                    string[] parts = column.Text.Split('-',
+                        StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                     return new ColumnEmail(column.Id, parts.LastOrDefault(), parts.FirstOrDefault());
                 }
                 else
@@ -319,7 +325,7 @@ public static partial class MondayUtilities
         jsonString = jsonString.Replace("\r", string.Empty).Replace("\n", string.Empty);
 
         // If the json string is not valid, throw an exception.
-        if (!IsValidJson(jsonString)) throw new System.Text.Json.JsonException("Invalid JSON format!");
+        if (!IsValidJson(jsonString)) throw new JsonException("Invalid JSON format!");
 
         // Return the json string.
         return jsonString;

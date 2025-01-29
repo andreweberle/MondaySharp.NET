@@ -13,15 +13,17 @@ public record ColumnEmail : ColumnBaseType
     /// <param name="message"></param>
     public ColumnEmail(string? id, string? emailAddress, string? message)
     {
-        this.Id = id;
-        this.Email = emailAddress;
+        Id = id;
+        Email = emailAddress;
 
         // If There Is No Message Defined,
         // We Will Add The Email Address There By Default.
-        this.Message = message ?? emailAddress;
+        Message = message ?? emailAddress;
     }
 
-    public ColumnEmail() { }
+    public ColumnEmail()
+    {
+    }
 
     /// <summary>
     /// 
@@ -29,11 +31,11 @@ public record ColumnEmail : ColumnBaseType
     /// <returns></returns>
     public override string ToString()
     {
-        if (string.IsNullOrEmpty(this.Email))
+        if (string.IsNullOrEmpty(Email))
         {
-            return "\"" + this.Id + "\" : null";
+            return "\"" + Id + "\" : null";
         }
 
-        return "\"" + this.Id + "\":{\"email\":\"" + this.Email + "\",\"text\":\"" + (this.Message ?? this.Email) + "\"}";
+        return "\"" + Id + "\":{\"email\":\"" + Email + "\",\"text\":\"" + (Message ?? Email) + "\"}";
     }
 }

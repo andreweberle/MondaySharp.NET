@@ -5,8 +5,10 @@ public record ColumnText : ColumnBaseType
     /// <summary>
     /// 
     /// </summary>
-    public ColumnText() { }
-    
+    public ColumnText()
+    {
+    }
+
     /// <summary>
     /// 
     /// </summary>
@@ -19,8 +21,8 @@ public record ColumnText : ColumnBaseType
     /// <param name="text"></param>
     public ColumnText(string? id, string? text)
     {
-        this.Id = id;
-        this.Text = text?.Replace("\"", "'");
+        Id = id;
+        Text = text?.Replace("\"", "'");
     }
 
     /// <summary>
@@ -29,11 +31,11 @@ public record ColumnText : ColumnBaseType
     /// <returns></returns>
     public override string ToString()
     {
-        if (string.IsNullOrEmpty(this.Text))
+        if (string.IsNullOrEmpty(Text))
         {
-            return "\"" + this.Id + "\" : null";
+            return "\"" + Id + "\" : null";
         }
 
-        return "\"" + this.Id + "\" : \"" + this.Text + "\"";
+        return "\"" + Id + "\" : \"" + Text + "\"";
     }
 }

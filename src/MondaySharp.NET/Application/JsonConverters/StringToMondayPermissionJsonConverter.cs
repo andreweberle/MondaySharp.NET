@@ -5,7 +5,8 @@ namespace MondaySharp.NET.Application.JsonConverters;
 
 internal class StringToMondayPermissionJsonConverter : JsonConverter<MondayPermission?>
 {
-    public override MondayPermission? ReadJson(JsonReader reader, Type objectType, MondayPermission? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override MondayPermission? ReadJson(JsonReader reader, Type objectType, MondayPermission? existingValue,
+        bool hasExistingValue, JsonSerializer serializer)
     {
         if (Enum.TryParse(reader.Value?.ToString(), out MondayPermission result))
         {
