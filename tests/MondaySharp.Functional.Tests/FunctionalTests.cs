@@ -108,7 +108,7 @@ public class FunctionalTests
         ];
 
         // Act
-        NET.Application.MondayResponse<TestRowWithGroup> items = 
+        NET.Application.MondayResponse<TestRowWithGroup> items =
             await this.MondayClient!.GetBoardItemsAsync<TestRowWithGroup>(this.BoardId, columnValues);
 
         // Assert
@@ -139,7 +139,7 @@ public class FunctionalTests
             }
         }]);
 
-        NET.Application.MondayResponse<TestRowWithAssets> mondayResponses = 
+        NET.Application.MondayResponse<TestRowWithAssets> mondayResponses =
             await this.MondayClient!.GetBoardItemsAsync<TestRowWithAssets>(this.BoardId, columnValues);
 
         // Assert
@@ -210,7 +210,7 @@ public class FunctionalTests
         };
 
         // Create the item
-        NET.Application.MondayResponse<Item> mondayResponseCreate = 
+        NET.Application.MondayResponse<Item> mondayResponseCreate =
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, [newItem]);
 
         // Assert
@@ -292,7 +292,7 @@ public class FunctionalTests
     public async Task CreateMultipleItemsMutation_Should_Be_Ok()
     {
         // Arrange
-        Item[] items =[ 
+        Item[] items = [
             new Item()
             {
                 Name = "Test Item 1",
@@ -347,7 +347,7 @@ public class FunctionalTests
                             Number = 11
                         },
                     },
-                    new ColumnValue() 
+                    new ColumnValue()
                     {
                         ColumnBaseType = new ColumnEmail()
                         {
@@ -369,7 +369,7 @@ public class FunctionalTests
         ];
 
         // Act
-        NET.Application.MondayResponse<Item> mondayResponse = 
+        NET.Application.MondayResponse<Item> mondayResponse =
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, items);
 
         // Assert
@@ -439,7 +439,7 @@ public class FunctionalTests
         };
 
         // Act
-        NET.Application.MondayResponse<Item> mondayResponse = 
+        NET.Application.MondayResponse<Item> mondayResponse =
             await this.MondayClient!.CreateBoardItemsAsync(this.BoardId, [item]);
 
         // Assert
@@ -512,7 +512,7 @@ public class FunctionalTests
         };
 
         // Create the items
-        NET.Application.MondayResponse<Item> mondayResponseCreate = 
+        NET.Application.MondayResponse<Item> mondayResponseCreate =
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item, item2]);
 
         // Assert
@@ -543,7 +543,7 @@ public class FunctionalTests
     {
         // Arrange
         // Act
-        NET.Application.MondayResponse<Board> mondayResponse = 
+        NET.Application.MondayResponse<Board> mondayResponse =
             await this.MondayClient!.GetBoardsAsync([this.BoardId]);
 
         // Assert
@@ -618,7 +618,7 @@ public class FunctionalTests
         };
 
         // Create the item
-        NET.Application.MondayResponse<Item> mondayResponseCreate = 
+        NET.Application.MondayResponse<Item> mondayResponseCreate =
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item, item1]);
 
         // Assert
@@ -659,7 +659,7 @@ public class FunctionalTests
         Assert.IsTrue(uploadFilesMondayResponse.Errors is null);
 
         // Delete the item
-        NET.Application.MondayResponse<Item> mondayResponseDelete = 
+        NET.Application.MondayResponse<Item> mondayResponseDelete =
             await this.MondayClient!.DeleteItemsAsync([item, item1]);
 
         // Assert
@@ -710,7 +710,7 @@ public class FunctionalTests
         };
 
         // Create the item
-        NET.Application.MondayResponse<Item> mondayResponseCreate = 
+        NET.Application.MondayResponse<Item> mondayResponseCreate =
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item]);
 
         // Assert
@@ -727,7 +727,7 @@ public class FunctionalTests
         };
 
         // Act
-        NET.Application.MondayResponse<Update> mondayResponse = 
+        NET.Application.MondayResponse<Update> mondayResponse =
             await this.MondayClient!.CreateItemsUpdateAsync([update]);
 
         // Assert
@@ -758,7 +758,7 @@ public class FunctionalTests
         Assert.IsTrue(uploadFilesMondayResponse.Errors is null);
 
         // Delete the item
-        NET.Application.MondayResponse<Item> mondayResponseDelete = 
+        NET.Application.MondayResponse<Item> mondayResponseDelete =
             await this.MondayClient!.DeleteItemsAsync([item]);
 
         // Assert
@@ -832,7 +832,7 @@ public class FunctionalTests
         };
 
         // Act
-        NET.Application.MondayResponse<TestRow> mondayResponse = 
+        NET.Application.MondayResponse<TestRow> mondayResponse =
             await this.MondayClient!.CreateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
 
         // Assert
@@ -929,7 +929,7 @@ public class FunctionalTests
         testRow.Tags = null;
         testRow.Rating = null;
         testRow.Name = "Updated Item";
-            
+
         // Attempt To Update The Item.
         mondayResponse = await this.MondayClient!.UpdateBoardItemsAsync<TestRow>(this.BoardId, [testRow]);
 
@@ -1051,7 +1051,7 @@ public class FunctionalTests
         };
 
         // Act
-        NET.Application.MondayResponse<TestSubRow> mondayResponseSubRow = 
+        NET.Application.MondayResponse<TestSubRow> mondayResponseSubRow =
             await this.MondayClient!.CreateBoardSubItemsAsync<TestSubRow>(
                 mondayResponse.Response?.FirstOrDefault()?.Data?.Id ?? 0, [testSubRow0, testSubRow1]);
 
@@ -1093,7 +1093,7 @@ public class FunctionalTests
         };
 
         // Create the item
-        NET.Application.MondayResponse<Item> mondayResponseCreate = 
+        NET.Application.MondayResponse<Item> mondayResponseCreate =
             await this.MondayClient!.CreateBoardItemsAsync(BoardId, [item]);
 
         // Assert
@@ -1169,8 +1169,8 @@ public class FunctionalTests
         };
 
         // Act
-        NET.Application.MondayResponse<Item> mondayResponseSubItem = 
-            await this.MondayClient!.CreateBoardSubItemsAsync(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.Id ?? 0, 
+        NET.Application.MondayResponse<Item> mondayResponseSubItem =
+            await this.MondayClient!.CreateBoardSubItemsAsync(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.Id ?? 0,
             [subItem1, subItem2]);
 
         // Assert
@@ -1716,4 +1716,23 @@ public class FunctionalTests
         public ColumnFile? Files { get; set; }
     }
 
+    [TestMethod]
+    public async Task Test()
+    {
+        NET.Application.MondayResponse<Customer> items = await this.MondayClient.GetBoardItemsAsync<Customer>(5452174804, 100);
+        var item = items.Response.FirstOrDefault();
+
+        List<Customer> customers = new List<Customer>();
+        Customer customer = item.Data;
+        customer.Name = "Updated name";
+        customers.Add(customer);
+        var updatedItem = await this.MondayClient.UpdateBoardItemsAsync<Customer>(5452174804, customers.ToArray());
+    }
+
+
+    public record Customer : MondayRow
+    {
+        [MondayColumnHeader("text_mkmn7km4")]
+        public ColumnText? XeroId { get; set; }
+    }
 }

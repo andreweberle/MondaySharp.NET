@@ -55,7 +55,7 @@ public partial class MondayClient : IMondayClient, IDisposable
         // Build The GraphQL Client.
         _graphQLHttpClient = new GraphQLHttpClient(new GraphQLHttpClientOptions()
         {
-            EndPoint = _mondayOptions.EndPoint,
+            EndPoint = _mondayOptions.EndPoint
         },
         new NewtonsoftJsonSerializer());
 
@@ -786,6 +786,14 @@ public partial class MondayClient : IMondayClient, IDisposable
                 // Check if the property is a MondayGroupType.
                 if (propertyInfo.PropertyType == typeof(Application.Entities.Group))
                 {
+                    continue;
+                }
+
+                // Check if the property is a MondayRow
+                if (propertyInfo.DeclaringType == typeof(MondayRow) 
+                    && propertyInfo.GetCustomAttribute<MondayColumnHeaderAttribute>()!.ColumnId == "name")
+                {
+                    columnValues.Add(new ColumnText("name", item.value.Name));
                     continue;
                 }
 
