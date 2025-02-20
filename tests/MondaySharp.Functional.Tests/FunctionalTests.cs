@@ -281,7 +281,7 @@ public class FunctionalTests
             new ColumnTimeline("timeline", new DateTime(2023, 11, 29), new DateTime(2023, 12, 29)),
             new ColumnEmail("email", "andreweberle@email.com.au", "hello world!"),
             new ColumnRating("rating", null),
-            new ColumnPhone("contact_phone", "1234567890")
+            new ColumnPhone("contact_phone", "1234567890", "US")
         ];
 
         // Act
@@ -315,6 +315,7 @@ public class FunctionalTests
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("text").GetString() == "hello world!");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("rating").GetProperty("rating").GetInt32() == 0);
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("contact_phone").GetProperty("phone").GetString() == "1234567890");
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("contact_phone").GetProperty("countryShortName").GetString() == "US");
     }
 
     [TestMethod]
@@ -865,7 +866,8 @@ public class FunctionalTests
             },
             Phone = new ColumnPhone()
             {
-                Phone = "1234567890"
+                Phone = "1234567890",
+                CountryShortName = "US"
             }
         };
 
@@ -943,7 +945,8 @@ public class FunctionalTests
             },
             Phone = new ColumnPhone()
             {
-                Phone = "1234567890"
+                Phone = "1234567890",
+                CountryShortName = "US"
             }
         };
 
@@ -1046,7 +1049,8 @@ public class FunctionalTests
             },
             Phone = new ColumnPhone()
             {
-                Phone = "1234567890"
+                Phone = "1234567890",
+                CountryShortName = "US"
             }
         };
 

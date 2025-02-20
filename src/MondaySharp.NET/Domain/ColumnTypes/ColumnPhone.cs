@@ -21,6 +21,13 @@ public record ColumnPhone : ColumnBaseType
         Phone = phone;
     }
 
+    public ColumnPhone(string? id, string? phone, string? countryShortName)
+    {
+        Id = id;
+        Phone = phone;
+        CountryShortName = countryShortName;
+    }
+
     public override string ToString()
     {
         if (string.IsNullOrEmpty(Phone))
