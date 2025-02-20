@@ -238,6 +238,9 @@ public static partial class MondayUtilities
                     return new ColumnEmail(column.Id, null, null);
                 }
 
+            case MondayColumnType.Phone:
+                return new ColumnPhone(column.Id, !string.IsNullOrEmpty(column.Text) ? column.Text : null);
+
             case MondayColumnType.Rating:
 
                 // If The Column Text Is Null Or Empty, Return A Column Rating With A None Rating.

@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using MondaySharp.NET.Application.Attributes;
 using MondaySharp.NET.Application.Entities;
 using MondaySharp.NET.Application.Interfaces;
@@ -8,13 +7,9 @@ using MondaySharp.NET.Domain.ColumnTypes;
 using MondaySharp.NET.Domain.Common;
 using MondaySharp.NET.Domain.Common.Enums;
 using MondaySharp.NET.Infrastructure.Extensions;
-using MondaySharp.NET.Infrastructure.Persistence;
 using MondaySharp.NET.Infrastructure.Utilities;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using MondaySharp.NET.Application;
-using static MondaySharp.Functional.Tests.FunctionalTests;
 
 namespace MondaySharp.Functional.Tests;
 
@@ -285,7 +280,8 @@ public class FunctionalTests
             new ColumnTag("tags", "21057674,21057675"),
             new ColumnTimeline("timeline", new DateTime(2023, 11, 29), new DateTime(2023, 12, 29)),
             new ColumnEmail("email", "andreweberle@email.com.au", "hello world!"),
-            new ColumnRating("rating", null)
+            new ColumnRating("rating", null),
+            new ColumnPhone("contact_phone", "1234567890", "US")
         ];
 
         // Act
@@ -318,6 +314,8 @@ public class FunctionalTests
                       "andreweberle@email.com.au");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("email").GetProperty("text").GetString() == "hello world!");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("rating").GetProperty("rating").GetInt32() == 0);
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("contact_phone").GetProperty("phone").GetString() == "1234567890");
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("contact_phone").GetProperty("countryShortName").GetString() == "US");
     }
 
     [TestMethod]
@@ -395,6 +393,14 @@ public class FunctionalTests
                         {
                             Id = "rating",
                             Rating = MondayRating.Five
+                        }
+                    },
+                    new ColumnValue()
+                    {
+                        ColumnBaseType = new ColumnPhone
+                        {
+                            Id = "contact_phone",
+                            Phone = "1234567890"
                         }
                     }
                 ]
@@ -857,6 +863,11 @@ public class FunctionalTests
             Tags = new ColumnTag()
             {
                 TagIds = [21057674, 21057675]
+            },
+            Phone = new ColumnPhone()
+            {
+                Phone = "1234567890",
+                CountryShortName = "US"
             }
         };
 
@@ -931,6 +942,11 @@ public class FunctionalTests
             Tags = new ColumnTag()
             {
                 TagIds = [21057674, 21057675]
+            },
+            Phone = new ColumnPhone()
+            {
+                Phone = "1234567890",
+                CountryShortName = "US"
             }
         };
 
@@ -958,6 +974,7 @@ public class FunctionalTests
         testRow.Tags = null;
         testRow.Rating = null;
         testRow.Name = "Updated Item";
+        testRow.Phone = null;
 
         // Attempt To Update The Item.
         mondayResponse = await MondayClient!.UpdateBoardItemsAsync<TestRow>(BoardId, [testRow]);
@@ -1029,6 +1046,11 @@ public class FunctionalTests
             Tags = new ColumnTag()
             {
                 TagIds = [21057674, 21057675]
+            },
+            Phone = new ColumnPhone()
+            {
+                Phone = "1234567890",
+                CountryShortName = "US"
             }
         };
 
@@ -1700,6 +1722,8 @@ public class FunctionalTests
         [MondayColumnHeader("email")] public ColumnEmail? Email { get; set; }
 
         [MondayColumnHeader("rating")] public ColumnRating? Rating { get; set; }
+
+        [MondayColumnHeader("phone")] public ColumnPhone? Phone { get; set; }
     }
 
     public record Test2Row : MondayRow
