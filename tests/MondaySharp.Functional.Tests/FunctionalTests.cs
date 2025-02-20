@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using MondaySharp.NET.Application.Attributes;
 using MondaySharp.NET.Application.Entities;
 using MondaySharp.NET.Application.Interfaces;
@@ -8,13 +7,9 @@ using MondaySharp.NET.Domain.ColumnTypes;
 using MondaySharp.NET.Domain.Common;
 using MondaySharp.NET.Domain.Common.Enums;
 using MondaySharp.NET.Infrastructure.Extensions;
-using MondaySharp.NET.Infrastructure.Persistence;
 using MondaySharp.NET.Infrastructure.Utilities;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using MondaySharp.NET.Application;
-using static MondaySharp.Functional.Tests.FunctionalTests;
 
 namespace MondaySharp.Functional.Tests;
 
