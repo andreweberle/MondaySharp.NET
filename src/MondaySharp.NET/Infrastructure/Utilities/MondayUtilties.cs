@@ -229,7 +229,7 @@ public static partial class MondayUtilities
             case MondayColumnType.Email:
                 if (!string.IsNullOrEmpty(column.Text))
                 {
-                    string[] parts = column.Text.Split('-',
+                    string[] parts = column.Text.Split(" - ",
                         StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                     return new ColumnEmail(column.Id, parts.LastOrDefault(), parts.FirstOrDefault());
                 }
