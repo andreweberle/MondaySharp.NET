@@ -3,6 +3,10 @@
 public record ColumnEmail : ColumnBaseType
 {
     public string? Email { get; set; }
+
+    /// <summary>
+    /// The email label disply text
+    /// </summary>
     public string? Message { get; set; }
 
     /// <summary>
