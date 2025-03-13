@@ -8,6 +8,9 @@ public interface IMondayClient
     public Task<MondayResponse<T>> GetBoardItemsAsync<T>(ulong boardId, ColumnValue[] columnValues, int limit = 25,
         CancellationToken cancellationToken = default) where T : MondayRow, new();
 
+    public Task<MondayResponse<T>> GetBoardItemsAsync<T>(ulong[] itemIds, int limit = 25,
+        CancellationToken cancellationToken = default) where T : MondayRow, new();
+
     public Task<MondayResponse<T>> GetBoardItemsAsync<T>(ulong boardId, int limit = 25,
         CancellationToken cancellationToken = default) where T : MondayRow, new();
 

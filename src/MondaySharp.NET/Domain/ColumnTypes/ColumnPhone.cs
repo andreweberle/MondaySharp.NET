@@ -13,7 +13,14 @@ public record ColumnPhone : ColumnBaseType
     [JsonProperty("countryShortName")]
     public string? CountryShortName { get; set; }
 
-    public ColumnPhone() { }
+    public ColumnPhone()
+    {
+    }
+
+    public ColumnPhone(string? id)
+    {
+        Id = id;
+    }
 
     public ColumnPhone(string? id, string? phone)
     {

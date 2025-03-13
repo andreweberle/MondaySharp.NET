@@ -259,6 +259,141 @@ public partial class MondayClient : IMondayClient, IDisposable
         };
     }
 
+    public async Task<MondayResponse<T>> GetBoardItemsAsync<T>(ulong[] itemIds, int limit = 25,
+        CancellationToken cancellationToken = default)  where T : MondayRow, new()
+    {
+        // If The GraphQL Client Is Null, Return Null.
+        if (_graphQLHttpClient == null)
+        {
+            return new MondayResponse<T>()
+            {
+                Errors = ["GraphQL Client Is Null."]
+            };
+        }
+
+        // If The Limit Is Greater Than 500, Return Null.
+        if (limit > 500)
+        {
+            return new MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["Limit Cannot Be Greater Than 500."]
+            };
+        }
+
+        // If The Limit Is Less Than 0, Return Null.
+        if (limit < 0)
+        {
+            return new MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = ["Limit Cannot Be Less Than 0."]
+            };
+        }
+
+        // Create New Instance Of T Type.
+        T instance = Activator.CreateInstance<T>();
+
+        // Check for multiple properties of the same type
+        foreach (KeyValuePair<Type, string> unSupportedType in MondayUtilities.UnsupportedTypes)
+        {
+            int count = instance.GetType().GetProperties().Count(propertyInfo => propertyInfo.PropertyType == unSupportedType.Key);
+            if (count > 1) throw new NotImplementedException(unSupportedType.Value);
+        }
+
+        // Create New
+        StringBuilder stringBuilder = new();
+
+        // Get each property in instance.
+        foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
+        {
+            // Attempt to get the type from the GetItemsQueryBuilder
+            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
+            {
+                // Append the query to the string builder.
+                stringBuilder.Append(query);
+            }
+        }
+
+        // Construct the GraphQL query
+        GraphQLRequest keyValuePairs = new()
+        {
+            Query = $@"query($limit: Int, $itemIds: [ID!]) {{
+              items(ids: $itemIds, limit: $limit) {{
+                id
+                name
+                state
+                column_values {{
+                  id
+                  text
+                  type
+                  value
+                }}
+                {stringBuilder}
+              }}
+            }}",
+            Variables = new
+            {
+                itemIds,
+                limit
+            }
+        };
+
+        // Execute The Query.
+        GraphQLResponse<ItemsPageByColumnValue> graphQLResponse =
+            await _graphQLHttpClient.SendQueryAsync<ItemsPageByColumnValue>(keyValuePairs, cancellationToken);
+
+        // If The Response Is Not Null, And The Data Is Not Null, And The Errors Is Null, Return The Data.
+        if (graphQLResponse.Errors is not null || !(graphQLResponse.Data?.Items?.Count > 0))
+        {
+            return new MondayResponse<T>()
+            {
+                IsSuccessful = false,
+                Errors = graphQLResponse.Errors?.Select(x => x.Message).ToHashSet()
+            };
+        }
+
+        // Get The Column Property Map.
+        Dictionary<string, string> columnPropertyMap = MondayUtilities.GetColumnPropertyMap<T>();
+        
+        // Create New Instance Of MondayResponse.
+        MondayResponse<T> mondayResponse = new()
+        {
+            IsSuccessful = true,
+            Response = []
+        };
+        
+        // Loop through each item
+        foreach (Item item in graphQLResponse.Data.Items)
+        {
+            // Check if we need to break out of the loop
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new MondayResponse<T>()
+                {
+                    IsSuccessful = false,
+                    Errors = ["Cancellation Requested."]
+                };
+            }
+            // Create New Instance Of T Type.
+            T dataInstance = Activator.CreateInstance<T>();
+            
+            // Attempt To Bind The Items.
+            if (MondayUtilities.TryBindColumnDataAsync(columnPropertyMap!, item!, ref dataInstance))
+            {
+                // Add the data to the response
+                mondayResponse.Response.Add(new MondayData<T>()
+                {
+                    Data = dataInstance
+                });
+            }
+        }
+
+        // Return The Response.
+        return mondayResponse;
+    }
+
+
     /// <summary>
     /// 
     /// </summary>
@@ -836,9 +971,6 @@ public partial class MondayClient : IMondayClient, IDisposable
                                 columnBaseType.Id = propertyInfo.Name;
                             }
                         }
-
-                        // Add the column base type to the list
-                        columnValues.Add(columnBaseType);
                     }
                     else
                     {
@@ -856,10 +988,10 @@ public partial class MondayClient : IMondayClient, IDisposable
                         }
 
                         if (columnBaseType is null) continue;
-
-                        // Add the column base type to the list
-                        columnValues.Add(columnBaseType);
                     }
+
+                    // Add the column base type to the list
+                    columnValues.Add(columnBaseType);
                 }
             }
 

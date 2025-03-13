@@ -210,6 +210,79 @@ public class FunctionalTests
     }
 
     [TestMethod]
+    public async Task GetBoardItemsByItemIds_Should_Be_Ok()
+    {
+        // Arrange
+        // Create New Item. 
+        Item newItem = new()
+        {
+            Name = "Test Item 1",
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text_mkmn7km4",
+                        Text = "Andrew Eberle"
+                    }
+                },
+            ]
+        };
+
+        // Create the item
+        NET.Application.MondayResponse<Item> mondayResponseCreate =
+            await MondayClient!.CreateBoardItemsAsync(BoardId, [newItem]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseCreate.IsSuccessful);
+        Assert.IsNull(mondayResponseCreate.Errors);
+        Assert.IsTrue(mondayResponseCreate.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseCreate.Response?.FirstOrDefault()?.Data?.Name == newItem.Name);
+
+        // Create New Item 2.
+        Item newItem2 = new()
+        {
+            Name = "Test Item 2",
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text_mkmn7km4",
+                        Text = "Andrew Eberle"
+                    }
+                },
+            ]
+        };
+
+        // Create the item
+        NET.Application.MondayResponse<Item> mondayResponseCreate2 =
+            await MondayClient!.CreateBoardItemsAsync(BoardId, [newItem2]);
+
+        // Assert
+        Assert.IsTrue(mondayResponseCreate2.IsSuccessful);
+        Assert.IsNull(mondayResponseCreate2.Errors);
+        Assert.IsTrue(mondayResponseCreate2.Response?.Count == 1);
+        Assert.IsTrue(mondayResponseCreate2.Response?.FirstOrDefault()?.Data?.Name == newItem2.Name);
+
+        // Assign the ids to the items
+        ulong[] boardItemIds =
+        [
+            mondayResponseCreate.Response.FirstOrDefault()?.Data?.Id ?? 0,
+            mondayResponseCreate2.Response.FirstOrDefault()?.Data?.Id ?? 0
+        ];
+
+        // Act
+        NET.Application.MondayResponse<TestRowWithUpdates> items =
+            await MondayClient!.GetBoardItemsAsync<TestRowWithUpdates>(boardItemIds);
+
+        // Assert
+        Assert.IsTrue(items.Response?.Count == 2);
+    }
+
+    [TestMethod]
     public async Task GetItemById_Should_Be_Ok()
     {
         // Act
@@ -327,7 +400,7 @@ public class FunctionalTests
             new()
             {
                 Name = "Test Item 1",
-                Group = new Group() { Id = "new_group53864" },
+                Group = new Group() { Id = "topics" },
                 ColumnValues =
                 [
                     new ColumnValue()
@@ -359,7 +432,7 @@ public class FunctionalTests
             new()
             {
                 Name = "Test Item 2",
-                Group = new Group() { Id = "new_group22583" },
+                Group = new Group() { Id = "topics" },
                 ColumnValues =
                 [
                     new ColumnValue()
@@ -422,17 +495,41 @@ public class FunctionalTests
     [TestMethod]
     public async Task CreateItemUpdate_Should_Be_Ok()
     {
+        // Arrange.
+        // Create New Item.
+        Item newItem = new()
+        {
+            Name = "Test Item 1",
+            ColumnValues =
+            [
+                new ColumnValue()
+                {
+                    ColumnBaseType = new ColumnText()
+                    {
+                        Id = "text_mkmn7km4",
+                        Text = "Andrew Eberle"
+                    }
+                },
+            ]
+        };
+
+        // Create the item
+        NET.Application.MondayResponse<Item> mondayResponseCreate =
+            await MondayClient!.CreateBoardItemsAsync(BoardId, [newItem]);
+
+
+
         // Arrange
         Update[] updates =
         [
             new()
             {
-                ItemId = 5718383580,
+                ItemId = mondayResponseCreate.Response!.FirstOrDefault()!.Data!.Id,
                 TextBody = "Test Update 1"
             },
             new()
             {
-                ItemId = 5718383580,
+                ItemId = mondayResponseCreate.Response!.FirstOrDefault()!.Data!.Id,
                 TextBody = "Test Update 2"
             }
         ];
@@ -498,7 +595,7 @@ public class FunctionalTests
         Item item = new()
         {
             Name = "Test Item 1",
-            Group = new Group() { Id = "new_group53864" },
+            Group = new Group() { Id = "topics" },
             ColumnValues =
             [
                 new ColumnValue()
@@ -522,7 +619,7 @@ public class FunctionalTests
         Item item2 = new()
         {
             Name = "Test Item 2",
-            Group = new Group() { Id = "new_group22583" },
+            Group = new Group() { Id = "topics" },
             ColumnValues =
             [
                 new ColumnValue()
@@ -604,7 +701,7 @@ public class FunctionalTests
         Item item = new()
         {
             Name = "Test Item 1",
-            Group = new Group() { Id = "new_group53864" },
+            Group = new Group() { Id = "topics" },
             ColumnValues =
             [
                 new ColumnValue()
@@ -628,7 +725,7 @@ public class FunctionalTests
         Item item1 = new()
         {
             Name = "Test Item 2",
-            Group = new Group() { Id = "new_group53864" },
+            Group = new Group() { Id = "topics" },
             ColumnValues =
             [
                 new ColumnValue()
@@ -670,13 +767,13 @@ public class FunctionalTests
         {
             FileName = "test.txt",
             StreamContent = new StreamContent(File.OpenRead("test.txt")),
-            ColumnId = "files4"
+            ColumnId = "file_mkp0y7rx"
         };
         FileUpload fileUpload1 = new()
         {
             FileName = "test.txt",
             StreamContent = new StreamContent(File.OpenRead("test.txt")),
-            ColumnId = "files4"
+            ColumnId = "file_mkp0y7rx"
         };
 
         item.FileUpload = fileUpload;
@@ -853,7 +950,7 @@ public class FunctionalTests
             },
             Status = new ColumnStatus()
             {
-                Status = "Done"
+                Status = "Complete"
             },
             Timeline = new ColumnTimeline()
             {
@@ -932,7 +1029,7 @@ public class FunctionalTests
             },
             Status = new ColumnStatus()
             {
-                Status = "Done"
+                Status = "Complete"
             },
             Timeline = new ColumnTimeline()
             {
@@ -1036,7 +1133,7 @@ public class FunctionalTests
             },
             Status = new ColumnStatus()
             {
-                Status = "Done"
+                Status = "Complete"
             },
             Timeline = new ColumnTimeline()
             {
@@ -1068,9 +1165,9 @@ public class FunctionalTests
         {
             Name = "Test Sub Item 1",
 
-            Status = new ColumnText()
+            Status = new ColumnStatus()
             {
-                Text = "Andrew Eberle"
+                Status = "Complete"
             },
             DueDate = new ColumnDateTime()
             {
@@ -1087,9 +1184,9 @@ public class FunctionalTests
         {
             Name = "Test Sub Item 2",
 
-            Status = new ColumnText()
+            Status = new ColumnStatus()
             {
-                Text = "Andrew Eberle"
+                Status = "Needs Review"
             },
             DueDate = new ColumnDateTime()
             {
@@ -1319,7 +1416,7 @@ public class FunctionalTests
             Name = "Test Item Update Details For Issue 10",
             Group = new Group()
             {
-                Id = "group_title"
+                Id = "topics"
             },
             Text = new ColumnText()
             {
@@ -1374,7 +1471,7 @@ public class FunctionalTests
             Name = "Test Item Update Details For Issue 9",
             Group = new Group()
             {
-                Id = "group_title"
+                Id = "topics"
             },
             Text = new ColumnText()
             {
@@ -1428,10 +1525,6 @@ public class FunctionalTests
         Item item = new()
         {
             Name = "Test Item Create Then Edit Then Upload File 3",
-            Group = new Group()
-            {
-                Id = "group_title"
-            },
             ColumnValues =
             [
                 new ColumnValue()
@@ -1487,7 +1580,7 @@ public class FunctionalTests
         {
             FileName = "test.txt",
             StreamContent = new StreamContent(File.OpenRead("test.txt")),
-            ColumnId = "files9__1"
+            ColumnId = "file_mkp0y7rx"
         };
 
         item.FileUpload = fileUpload;
@@ -1510,10 +1603,6 @@ public class FunctionalTests
         Item item = new()
         {
             Name = "Test Item Update Details With File",
-            Group = new Group()
-            {
-                Id = "group_title"
-            },
             ColumnValues =
             [
                 new ColumnValue()
@@ -1606,7 +1695,6 @@ public class FunctionalTests
         Item item = new()
         {
             Name = "Test Item - FOR DELETION",
-            Group = new Group() { Id = "group_title" }
         };
 
         // Act
@@ -1735,11 +1823,11 @@ public class FunctionalTests
 
     public record TestSubRow : MondayRow
     {
-        [MondayColumnHeader("status__1")] public ColumnText? Status { get; set; }
+        [MondayColumnHeader("status")] public ColumnStatus? Status { get; set; }
 
-        [MondayColumnHeader("date6")] public ColumnDateTime? DueDate { get; set; }
+        [MondayColumnHeader("date0")] public ColumnDateTime? DueDate { get; set; }
 
-        [MondayColumnHeader("numbers8")] public ColumnNumber? Priority { get; set; }
+        [MondayColumnHeader("numeric_mkp05akm")] public ColumnNumber? Priority { get; set; }
     }
 
     // Fields currently on Test-Board
@@ -1749,12 +1837,12 @@ public class FunctionalTests
 
         [MondayColumnHeader("status")] public ColumnStatus? Status { get; set; }
 
-        [MondayColumnHeader("date4")] public ColumnDateTime? Date { get; set; }
+        [MondayColumnHeader("date_mkp02cdj")] public ColumnDateTime? Date { get; set; }
 
-        [MondayColumnHeader("dropdown__1")] public ColumnDropDown? Dropdown { get; set; }
+        [MondayColumnHeader("dropdown_mkp0raj0")] public ColumnDropDown? Dropdown { get; set; }
 
-        [MondayColumnHeader("text__1")] public ColumnText? Text { get; set; }
+        [MondayColumnHeader("text_mkmn7km4")] public ColumnText? Text { get; set; }
 
-        [MondayColumnHeader("files9__1")] public ColumnFile? Files { get; set; }
+        [MondayColumnHeader("file_mkp0y7rx")] public ColumnFile? Files { get; set; }
     }
 }
