@@ -1645,7 +1645,7 @@ public partial class MondayClient : IMondayClient, IDisposable
 
         // Create The Response Parameters.
         const string RESPONSE_PARAMS =
-            @$"{{id name state board_kind board_folder_id description workspace_id item_terminology items_count permissions}}";
+            @$"{{id name state board_kind board_folder_id description workspace_id item_terminology items_count permissions updated_at}}";
 
         // Create parameters for the query
         StringBuilder parameters = new();
