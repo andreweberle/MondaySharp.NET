@@ -41,4 +41,7 @@ public record Board
     [JsonProperty("items_count")] public int ItemsCount { get; set; }
 
     [JsonProperty("items_page")] public ItemsPageByColumnValue? ItemsPage { get; set; }
+    
+    [JsonProperty("updated_at")]
+    public DateTime? UpdatedAt { get; set; }
 }
