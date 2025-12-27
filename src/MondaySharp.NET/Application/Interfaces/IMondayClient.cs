@@ -49,5 +49,8 @@ public interface IMondayClient
     public Task<MondayResponse<T>> UpdateBoardItemsAsync<T>(ulong boardId, T[] items,
         CancellationToken cancellationToken = default) where T : MondayRow, new();
 
+    public Task<MondayResponse<T>> GetUsersAsync<T>(ulong[]? userIds = null, 
+        CancellationToken cancellationToken = default) where T : MondayUser, new();
+    
     public void Dispose();
 }

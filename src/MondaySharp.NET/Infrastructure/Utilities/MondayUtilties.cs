@@ -7,6 +7,8 @@ using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using GraphQL;
+using MondaySharp.NET.Application.Interfaces;
 
 namespace MondaySharp.NET.Infrastructure.Utilities;
 
@@ -28,7 +30,7 @@ public static partial class MondayUtilities
     {
         { typeof(Application.Entities.Group), @"group { id title color archived deleted position }" },
         { typeof(List<Asset>), @"assets { id name public_url url_thumbnail created_at }" },
-        { typeof(List<Update>), @"updates (limit: 100) { id text_body }" }
+        { typeof(List<Update>), @"updates (limit: 100) { id text_body }" },
     };
 
     // Define the supported types and their corresponding error messages
@@ -38,6 +40,22 @@ public static partial class MondayUtilities
         { typeof(List<Asset>), "Multiple Asset Properties Are Not Supported." },
         { typeof(List<Update>), "Multiple Update Properties Are Not Supported." }
     };
+    
+    // https://developer.monday.com/api-reference/reference/column-values-v2#using-fragments-to-get-column-specific-fields
+    public static readonly Dictionary<Type, string> ColumnValueFragments = new()
+    {
+        {
+            typeof(ColumnPeopleAndTeams),
+            """
+            ... on PeopleValue {
+                persons_and_teams {
+                    id
+                    kind
+                }
+            }
+            """
+        }
+    };
 
     /// <summary>
     /// 
@@ -46,40 +64,55 @@ public static partial class MondayUtilities
     /// <param name="item"></param>
     /// <param name="destination"></param>
     /// <returns></returns>
-    public static bool TryBindColumnDataAsync<T>(
-        Dictionary<string, string> columnPropertyMap, Item item, ref T destination) where T : MondayRow, new()
+    public static bool TryBindColumnData<T>(
+        IReadOnlyDictionary<string, string> columnPropertyMap,
+        IMondayBindableSource source,
+        ref T destination)
+        where T : IMondayIdentity, new()
     {
-        // Get The Destination Type.
-        Type? destinationType = destination?.GetType();
+        destination.Id = source.Id;
+        destination.Name = source.Name;
 
-        // If The Destination Type Is Null, Return False.
-        if (destinationType == null || destination == null) return false;
+        Type destinationType = destination.GetType();
 
-        // Assign Default Values.
-        destination.Id = item.Id;
-        destination.Name = item.Name;
+        SetPropertyIfExists(destinationType, "Group", source.Group, destination);
+        SetPropertyIfExists(destinationType, "Assets", source.Assets, destination);
+        SetPropertyIfExists(destinationType, "Updates", source.Updates, destination);
 
-        SetPropertyIfExists(destinationType, nameof(item.Group), item.Group, destination);
-        SetPropertyIfExists(destinationType, nameof(item.Assets), item.Assets, destination);
-        SetPropertyIfExists(destinationType, nameof(item.Updates), item.Updates, destination);
-
-        foreach (ColumnValue? columnValue in item.ColumnValues
-                     .Where(x => x.Type != MondayColumnType.Subtasks))
+        foreach (ColumnValue columnValue in source.ColumnValues.Where(x => x.Type != MondayColumnType.Subtasks))
         {
-            // Perform dictionary lookup once
-            string columnId = columnValue.Id ?? string.Empty;
-            if (columnPropertyMap.TryGetValue(columnId, out string? propertyName) ||
-                columnPropertyMap.TryGetValue(char.ToUpper(columnId[0], Culture) + columnId[1..], out propertyName) ||
-                columnId.Replace(" ", "") == propertyName)
-            {
-                if (string.IsNullOrEmpty(propertyName)) continue;
+            string? rawId = columnValue.Id;
+            if (string.IsNullOrWhiteSpace(rawId)) continue;
 
-                PropertyInfo? property = destinationType.GetProperty(propertyName);
-                property?.SetValue(destination, CreateColumnTypeInstance(columnValue.Type, columnValue));
-            }
+            // normalize variants once
+            string noSpaces = rawId.Replace(" ", "");
+            string pascal = rawId.Length == 0 ? rawId : char.ToUpper(rawId[0], Culture) + rawId[1..];
+
+            if (!TryResolvePropertyName(columnPropertyMap, rawId, pascal, noSpaces, out string? propertyName)) continue;
+            if (string.IsNullOrWhiteSpace(propertyName)) continue;
+
+            PropertyInfo? prop = destinationType.GetProperty(propertyName);
+            if (prop == null || !prop.CanWrite) continue;
+
+            prop.SetValue(destination, CreateColumnTypeInstance(columnValue.Type, columnValue));
         }
 
         return true;
+    }
+    
+    private static bool TryResolvePropertyName(
+        IReadOnlyDictionary<string, string> map,
+        string rawId,
+        string pascalId,
+        string noSpacesId,
+        out string? propertyName)
+    {
+        if (map.TryGetValue(rawId, out propertyName)) return true;
+        if (map.TryGetValue(pascalId, out propertyName)) return true;
+        if (map.TryGetValue(noSpacesId, out propertyName)) return true;
+
+        propertyName = null;
+        return false;
     }
 
     /// <summary>
@@ -260,7 +293,58 @@ public static partial class MondayUtilities
 
                 // Return the Column Rating.
                 return new ColumnRating(column.Id, rating);
+            
+            case MondayColumnType.People:
+            {
+                if (string.IsNullOrEmpty(column.Text))
+                {
+                    return new ColumnPeopleAndTeams(column.Id, []);
+                }
 
+                // Split and clean the display values
+                string[] displayValues = column.Text
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(v => v.Trim())
+                    .ToArray();
+
+                // Get the structured entities
+                IEnumerable<PeopleEntity> entities = column.PeopleAndTeams;
+
+                // Critical safety check: lengths must match
+                if (displayValues.Length != entities.Count())
+                {
+                    throw new InvalidOperationException(
+                        $"Mismatch between people display names ({displayValues.Length}) and entities ({entities.Count()}) " +
+                        $"in column '{column.Id}'. Data may be corrupted or API changed.");
+                }
+
+                // Create the dictionary of people and teams
+                Dictionary<ulong, PeopleAndTeamsEntry> peopleAndTeams = [];
+
+                // Loop through the entities and create the dictionary
+                for (int i = 0; i < displayValues.Length; i++)
+                {
+                    // Attempt to get the entity by index
+                    PeopleEntity entity = entities.ElementAt(i);
+                    
+                    // Assign the display name to the entity
+                    string displayName = displayValues[i];
+
+                    // Attempt to parse the person ID
+                    if (!ulong.TryParse(entity.Id, out ulong personId))
+                    {
+                        // This should rarely happen if API is consistent, but still guard
+                        throw new ArgumentException($"Invalid person ID '{entity.Id}' at position {i}: '{displayName}'");
+                    }
+
+                    // Add the entity to the dictionary
+                    peopleAndTeams[personId] = new PeopleAndTeamsEntry(entity.Kind, displayName);
+                }
+
+                // Return the column people and teams
+                return new ColumnPeopleAndTeams(column.Id, peopleAndTeams);
+            }
+            
             default:
                 throw new ArgumentException($"Unsupported column type: {columnType}");
         }
@@ -273,8 +357,7 @@ public static partial class MondayUtilities
     /// <returns></returns>
     public static string ToColumnValuesJson(this List<ColumnBaseType>? columnTypes)
     {
-        if (columnTypes == null) return string.Empty;
-        if (columnTypes.Count == 0) return string.Empty;
+        if (columnTypes == null || columnTypes.Count == 0) return string.Empty;
 
         // Get the total count of all column types.
         int totalCount = columnTypes.Sum(GetColumnTypeLength);
@@ -298,23 +381,22 @@ public static partial class MondayUtilities
         for (int i = 0; i < columnTypesSpan.Length; i++)
         {
             // If the column type is not null, add it to the json string.
-            if (columnTypesSpan[i] != null)
+            if (columnTypesSpan[i] == null) continue;
+            
+            // ToString will have an override that will return the correct JSON format.
+            string columnTypeString = columnTypesSpan[i].ToString();
+
+            // Copy the string to the jsonChars span.
+            columnTypeString.AsSpan().CopyTo(jsonChars[currentIndex..]);
+
+            // Increment the current index by the length of the column type string.
+            currentIndex += columnTypeString.Length;
+
+            // If the current index is less than the column types span length - 1, add a comma.
+            if (i < columnTypesSpan.Length - 1)
             {
-                // ToString will have an override that will return the correct JSON format.
-                string columnTypeString = columnTypesSpan[i].ToString();
-
-                // Copy the string to the jsonChars span.
-                columnTypeString.AsSpan().CopyTo(jsonChars[currentIndex..]);
-
-                // Increment the current index by the length of the column type string.
-                currentIndex += columnTypeString.Length;
-
-                // If the current index is less than the column types span length - 1, add a comma.
-                if (i < columnTypesSpan.Length - 1)
-                {
-                    // Add a comma.
-                    jsonChars[currentIndex++] = ',';
-                }
+                // Add a comma.
+                jsonChars[currentIndex++] = ',';
             }
         }
 
@@ -328,10 +410,8 @@ public static partial class MondayUtilities
         jsonString = jsonString.Replace("\r", string.Empty).Replace("\n", string.Empty);
 
         // If the json string is not valid, throw an exception.
-        if (!IsValidJson(jsonString)) throw new JsonException("Invalid JSON format!");
-
-        // Return the json string.
-        return jsonString;
+        return !IsValidJson(jsonString) ? throw new JsonException("Invalid JSON format!") 
+            : jsonString;
     }
 
     /// <summary>
@@ -366,6 +446,39 @@ public static partial class MondayUtilities
         catch (JsonException)
         {
             return false;
+        }
+    }
+    
+    public static IEnumerable<string> BuildErrorMessages(
+        IEnumerable<GraphQLError>? errors,
+        IReadOnlyDictionary<string, object>? extensions)
+    {
+        if (errors is null)
+            yield break;
+
+        foreach (GraphQLError error in errors)
+        {
+            // Base message
+            if (!string.IsNullOrWhiteSpace(error.Message)) yield return error.Message;
+
+            // Try to extract Monday specific error details.
+            if (error.Extensions is not null &&
+                error.Extensions.TryGetValue("error_data", out object? errorDataObj) &&
+                errorDataObj is IDictionary<string, object> errorData)
+            {
+                if (errorData.TryGetValue("column_id", out object? columnId))
+                    yield return $"Invalid column ID: '{columnId}'";
+
+                if (errorData.TryGetValue("error_reason", out object? reason))
+                    yield return $"Reason: {reason}";
+            }
+
+            // Optional: request id (useful for support/debugging)
+            if (extensions != null &&
+                extensions.TryGetValue("request_id", out object? requestId))
+            {
+                yield return $"Request ID: {requestId}";
+            }
         }
     }
 }

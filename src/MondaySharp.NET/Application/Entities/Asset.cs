@@ -1,4 +1,5 @@
 ﻿using MondaySharp.NET.Application.JsonConverters;
+using MondaySharp.NET.Domain.Common;
 using Newtonsoft.Json;
 
 namespace MondaySharp.NET.Application.Entities;
@@ -25,7 +26,7 @@ public record Asset
 
     [JsonProperty("original_geometry")] public string? OriginalGeometry { get; set; }
 
-    [JsonProperty("uploaded_by")] public User? UploadedBy { get; set; }
+    [JsonProperty("uploaded_by")] public MondayUser? UploadedBy { get; set; }
 
     [JsonProperty("url")] public Uri? Url { get; set; }
 }

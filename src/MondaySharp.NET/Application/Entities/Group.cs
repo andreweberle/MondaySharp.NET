@@ -16,5 +16,5 @@ public record Group
 
     [JsonProperty("position")] public string? Position { get; set; }
 
-    [JsonProperty("items_page")] public List<Item>? Items { get; set; }
+    [JsonProperty("items_page")] public List<Item> Items { get; set; } = [];
 }
