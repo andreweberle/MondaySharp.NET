@@ -17,5 +17,7 @@ public record ColumnValue
 
     [JsonProperty("__typename")] public string? TypeName { get; set; }
 
+    [JsonProperty("persons_and_teams")] public List<PeopleEntity> PeopleAndTeams { get; set; } = [];
+
     [JsonIgnore] public ColumnBaseType? ColumnBaseType { get; set; }
 }
