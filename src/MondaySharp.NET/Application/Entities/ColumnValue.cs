@@ -19,5 +19,7 @@ public record ColumnValue
 
     [JsonProperty("persons_and_teams")] public List<PeopleEntity> PeopleAndTeams { get; set; } = [];
 
+    [JsonProperty("mirrored_items")] public List<MirrorItem> MirroredItems { get; set; } = [];
+
     [JsonIgnore] public ColumnBaseType? ColumnBaseType { get; set; }
 }
