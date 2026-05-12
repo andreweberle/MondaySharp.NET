@@ -1827,7 +1827,7 @@ public class FunctionalTests
     {
         // Act
         NET.Application.MondayResponse<MondayTestMirrorRow> mondayResponse =
-            await MondayClient!.GetBoardItemAsync<MondayTestMirrorRow>(this.BoardId);
+            await MondayClient!.GetBoardItemAsync<MondayTestMirrorRow>(11973352090);
         
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
@@ -1840,8 +1840,8 @@ public class FunctionalTests
 
     public record MondayTestMirrorRow : MondayRow
     {
-        [MondayColumnHeader("lookup_mm39q3f2")] public ColumnMirror<ColumnText>? SomeColumn { get; set; }
-        [MondayColumnHeader("lookup_mm39m1yr")] public ColumnMirror<ColumnStatus>? SomeOtherColumn { get; set; }
+        [MondayColumnHeader("lookup_mm39cb73")] public ColumnMirror<ColumnText>? SomeColumn { get; set; }
+        [MondayColumnHeader("lookup_mm39d6tw")] public ColumnMirror<ColumnStatus>? SomeOtherColumn { get; set; }
         [MondayColumnHeader("lookup_mm39v2p4")] public ColumnMirror<ColumnNumber>? AnotherColumn { get; set; }
     }
 
