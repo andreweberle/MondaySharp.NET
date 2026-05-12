@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using GraphQL;
 using MondaySharp.NET.Application.Interfaces;
+using System.Collections;
 
 namespace MondaySharp.NET.Infrastructure.Utilities;
 
@@ -40,7 +41,26 @@ public static partial class MondayUtilities
         { typeof(List<Asset>), "Multiple Asset Properties Are Not Supported." },
         { typeof(List<Update>), "Multiple Update Properties Are Not Supported." }
     };
-    
+
+    public static readonly Dictionary<MondayColumnType, Type> SupportedMirrorColumnTypes = new()
+    {
+        { MondayColumnType.Text, typeof(ColumnText) },
+        { MondayColumnType.Numbers, typeof(ColumnNumber) },
+        { MondayColumnType.Status, typeof(ColumnStatus) },
+        { MondayColumnType.Date, typeof(ColumnDateTime) },
+        { MondayColumnType.Checkbox, typeof(ColumnCheckBox) },
+        { MondayColumnType.Color_Picker, typeof(ColumnColorPicker) },
+        { MondayColumnType.Email, typeof(ColumnEmail) },
+        { MondayColumnType.Dropdown, typeof(ColumnDropDown) },
+        { MondayColumnType.Link , typeof(ColumnLink) },
+        { MondayColumnType.Long_Text , typeof(ColumnLongText) },
+        { MondayColumnType.People , typeof(ColumnPeopleAndTeams) },
+        { MondayColumnType.Phone , typeof(ColumnPhone) },
+        { MondayColumnType.Rating , typeof(ColumnRating) },
+        { MondayColumnType.Tags , typeof(ColumnTag) },
+        { MondayColumnType.Timeline , typeof(ColumnTimeline) }
+    };
+
     // https://developer.monday.com/api-reference/reference/column-values-v2#using-fragments-to-get-column-specific-fields
     public static readonly Dictionary<Type, string> ColumnValueFragments = new()
     {
@@ -54,7 +74,79 @@ public static partial class MondayUtilities
                 }
             }
             """
-        }
+        },
+        
+        {
+            typeof(ColumnMirror<ColumnText>),
+            """
+            ... on MirrorValue {
+                    mirrored_items {
+                        mirrored_value {
+                            ... on TextValue {
+                                id
+                                type,
+                                value
+                                text
+                            }
+                    }
+                }
+            }
+            """
+        },
+
+        {
+            typeof(ColumnMirror<ColumnNumber>),
+            """
+            ... on MirrorValue {
+                    mirrored_items {
+                        mirrored_value {
+                        ... on NumbersValue  {
+                           id
+                           type
+                           value
+                           text
+                        }
+                    }
+                }
+            }
+            """
+        },
+
+        {
+            typeof(ColumnMirror<ColumnDateTime>),
+            """
+            ... on MirrorValue {
+                    mirrored_items {
+                        mirrored_value {
+                        ... on DateValue {
+                           id
+                           type
+                           value
+                           text
+                        }
+                    }
+                }
+            }
+            """
+        },
+
+        {
+            typeof(ColumnMirror<ColumnStatus>),
+            """
+            ... on MirrorValue {
+                    mirrored_items {
+                        mirrored_value {
+            ... on StatusValue {
+               id
+               type
+               value
+               text
+            }
+                        }
+                        }
+                        }
+            """
+        },
     };
 
     /// <summary>
@@ -93,7 +185,6 @@ public static partial class MondayUtilities
 
             PropertyInfo? prop = destinationType.GetProperty(propertyName);
             if (prop == null || !prop.CanWrite) continue;
-
             prop.SetValue(destination, CreateColumnTypeInstance(columnValue.Type, columnValue));
         }
 
@@ -165,13 +256,6 @@ public static partial class MondayUtilities
         return columnPropertyMap;
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="columnType"></param>
-    /// <param name="column"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
     public static object CreateColumnTypeInstance(MondayColumnType? columnType, ColumnValue column)
     {
         // Create The Column Type Instance.
@@ -345,6 +429,70 @@ public static partial class MondayUtilities
                 return new ColumnPeopleAndTeams(column.Id, peopleAndTeams);
             }
             
+            case MondayColumnType.Mirror:
+
+                // Check if there are mirrored items, if not return an empty mirror column
+                if (column.MirroredItems == null || column.MirroredItems.Count == 0)
+                {
+                    return new ColumnMirror<ColumnBaseType>(column.Id, []);
+                }
+
+                // Get the first mirrored item to determine the type of the mirror column
+                MirrorItem? firstMirrorItem = column.MirroredItems.FirstOrDefault();
+
+                // Check all mirrored items to ensure they are of the same type, if not throw an exception
+                if (column.MirroredItems.Any(item => item.MirroredValue?.GetType() != firstMirrorItem?.MirroredValue?.GetType()))
+                {
+                    throw new InvalidOperationException($"Inconsistent mirrored value types in column '{column.Id}'. All mirrored items must be of the same type.");
+                }
+
+                if (firstMirrorItem?.MirroredValue == null)
+                {
+                    throw new InvalidOperationException($"The first mirrored item in column '{column.Id}' has a null mirrored value, cannot determine mirror column type.");
+                }
+
+                if (!SupportedMirrorColumnTypes.TryGetValue(firstMirrorItem.MirroredValue.Type, out Type? mirrorColumnType))
+                {
+                    // TODO: Validate that unsupported types are not used in mirrors at the API level
+                    // and throw an exception here if they are encountered
+                    throw new NotImplementedException($"{firstMirrorItem?.MirroredValue?.Type}");
+                }
+
+                // Get the type of the mirror column based on the first mirrored item
+                Type listType = typeof(List<>).MakeGenericType([mirrorColumnType!]);
+
+                // Create the list instance
+                IList? list = (IList?)Activator.CreateInstance(listType) ?? throw new InvalidOperationException($"Failed to create list instance for type {listType}");
+
+                // Use the type to create the appropriate mirror column instance
+                foreach (MirrorItem mirrorItem in column.MirroredItems)
+                {
+                    // Check if the mirrored value is null, if so skip this item
+                    if (mirrorItem.MirroredValue == null) continue;
+
+                    // Attempt to get the mirrored value using recursion for nested mirrors
+                    object obj = CreateColumnTypeInstance(mirrorItem.MirroredValue.Type, mirrorItem.MirroredValue);
+
+                    // Check if object is of the expected mirror column type, if not throw an exception
+                    if (obj.GetType() != mirrorColumnType)
+                    {
+                        throw new InvalidOperationException(
+                            $"Unexpected mirrored value type in column '{column.Id}'. Expected {mirrorColumnType}, got {obj.GetType()}.");
+                    }
+
+                    // Add the mirrored value to the list
+                    list.Add(obj);
+                }
+
+                // Build the mirror column instance using the list of mirrored values
+                Type mirrorColumnInstanceType = typeof(ColumnMirror<>).MakeGenericType([mirrorColumnType]);
+
+                // Create the mirror column instance
+                var mirrorColumnInstance = Activator.CreateInstance(mirrorColumnInstanceType, column.Id, list) 
+                    ?? throw new InvalidOperationException($"Failed to create mirror column instance for type {mirrorColumnInstanceType}");
+
+                return mirrorColumnInstance;
+
             default:
                 throw new ArgumentException($"Unsupported column type: {columnType}");
         }
