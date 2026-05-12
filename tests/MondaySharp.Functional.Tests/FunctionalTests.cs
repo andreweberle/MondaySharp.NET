@@ -1821,7 +1821,31 @@ public class FunctionalTests
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == 12254632);
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == "Andrew Eberle");
     }
-    
+
+    [TestMethod]
+    public async Task Get_Mirrored_Text_Column_Should_Be_Ok()
+    {
+        // Act
+        NET.Application.MondayResponse<MondayTestMirrorRow> mondayResponse =
+            await MondayClient!.GetBoardItemAsync<MondayTestMirrorRow>(this.BoardId);
+        
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.Count > 0);
+        Assert.IsNotNull(mondayResponse.Response?.FirstOrDefault()?.Data?.SomeColumn);
+        Assert.IsNotNull(mondayResponse.Response?.FirstOrDefault()?.Data?.SomeOtherColumn);
+        Assert.IsNotNull(mondayResponse.Response?.FirstOrDefault()?.Data?.AnotherColumn);
+
+    }
+
+    public record MondayTestMirrorRow : MondayRow
+    {
+        [MondayColumnHeader("lookup_mm39q3f2")] public ColumnMirror<ColumnText>? SomeColumn { get; set; }
+        [MondayColumnHeader("lookup_mm39m1yr")] public ColumnMirror<ColumnStatus>? SomeOtherColumn { get; set; }
+        [MondayColumnHeader("lookup_mm39v2p4")] public ColumnMirror<ColumnNumber>? AnotherColumn { get; set; }
+    }
+
+
     public record User : MondayUser
     {
         
