@@ -320,9 +320,9 @@ public partial class MondayClient : IMondayClient, IDisposable
             Type propertyType = propertyInfo.PropertyType;
 
             // Get the effective type if the property is a list.
-            Type effectiveType = propertyType.IsGenericType &&
-                     propertyType.GetGenericTypeDefinition() == typeof(List<>)
-                ? propertyType.GetGenericArguments().FirstOrDefault()?.BaseType ?? propertyType
+            Type effectiveType = propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>)
+                ? propertyType.GetGenericArguments().FirstOrDefault() == typeof(MondaySubRow) ? typeof(MondaySubRowLite)
+                    :  propertyType.GetGenericArguments().FirstOrDefault()?.BaseType ?? propertyType
                 : propertyType;
 
             // Attempt to get the type from the GetItemsQueryBuilder

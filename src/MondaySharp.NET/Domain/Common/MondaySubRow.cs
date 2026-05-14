@@ -3,6 +3,7 @@ using MondaySharp.NET.Application.Interfaces;
 
 namespace MondaySharp.NET.Domain.Common;
 
+public record MondaySubRowLite;
 public record MondaySubRow : IMondayIdentity
 {
     [MondayColumnHeader("id")] public ulong Id { get; set; }

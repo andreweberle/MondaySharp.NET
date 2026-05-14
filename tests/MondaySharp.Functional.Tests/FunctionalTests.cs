@@ -1825,9 +1825,8 @@ public class FunctionalTests
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
-        Assert.IsTrue(mondayResponse.Response?.Count == 2);
+        Assert.IsTrue(mondayResponse.Response?.Count == 1);
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == 12010268667);
-        Assert.IsTrue(mondayResponse.Response?.LastOrDefault()?.Data?.Id == 12010268667);
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.SubItems.All(x => x.Id > 0));
     }
 
