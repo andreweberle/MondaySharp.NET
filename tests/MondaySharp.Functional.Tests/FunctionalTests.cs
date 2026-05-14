@@ -1821,13 +1821,13 @@ public class FunctionalTests
     {
         // Act
         MondayResponse<MondayRowWithSubItems> mondayResponse =
-            await MondayClient!.GetBoardItemsAsync<MondayRowWithSubItems>([11996784006, 11996868487]);
+            await MondayClient!.GetBoardItemsAsync<MondayRowWithSubItems>([12010268667]);
 
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Response?.Count == 2);
-        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == 11996784006);
-        Assert.IsTrue(mondayResponse.Response?.LastOrDefault()?.Data?.Id == 11996868487);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == 12010268667);
+        Assert.IsTrue(mondayResponse.Response?.LastOrDefault()?.Data?.Id == 12010268667);
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.SubItems.All(x => x.Id > 0));
     }
 

@@ -32,6 +32,12 @@ internal static partial class MondayUtilities
         { typeof(Application.Entities.Group), @"group { id title color archived deleted position }" },
         { typeof(List<Asset>), @"assets { id name public_url url_thumbnail created_at }" },
         { typeof(List<Update>), @"updates (limit: 100) { id text_body }" },
+        { typeof(MondaySubRowLite),
+            @"subitems { 
+                id 
+                name
+            }"
+        },
         { typeof(MondaySubRow),
             @"subitems { 
                 id 
@@ -102,11 +108,14 @@ internal static partial class MondayUtilities
         // Attempt to get any List of SubItems properties on the destination type. If they exist, we will attempt to bind the subitems to them.
         PropertyInfo? subItemsProperty = destinationType.GetProperties()
             .FirstOrDefault(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(List<>)
-                                 && p.PropertyType.GetGenericArguments()[0].BaseType == typeof(MondaySubRow));
+            && (
+                p.PropertyType.GetGenericArguments().FirstOrDefault()?.BaseType == typeof(MondaySubRow)) || 
+                p.PropertyType.GetGenericArguments().FirstOrDefault() == typeof(MondaySubRow)
+            );
 
         // Get the subItems Type.
         Type? subItemsDestinationType = subItemsProperty?.PropertyType.GetGenericArguments()
-            .FirstOrDefault(x => x.BaseType == typeof(MondaySubRow));
+            .FirstOrDefault(x => x.BaseType == typeof(MondaySubRow) || x == typeof(MondaySubRow));
 
         // Check if the subItem Type was found.
         if (subItemsDestinationType == null) return true;
