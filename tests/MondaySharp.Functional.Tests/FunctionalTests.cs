@@ -1821,7 +1821,32 @@ public class FunctionalTests
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == 12254632);
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == "Andrew Eberle");
     }
-    
+
+    [TestMethod]
+    public async Task Get_Item_With_SubItem_Should_Be_Ok()
+    {
+        // Act
+        MondayResponse<MondayRowWithSubItems> mondayResponse =
+            await MondayClient!.GetBoardItemsAsync<MondayRowWithSubItems>([11996784006, 11996868487]);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
+        Assert.IsTrue(mondayResponse.Response?.Count == 2);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == 11996784006);
+        Assert.IsTrue(mondayResponse.Response?.LastOrDefault()?.Data?.Id == 11996868487);
+        Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.SubItems.All(x => x.Id > 0));
+    }
+
+    public record MondayRowWithSubItems : MondayRow
+    {
+        public List<SomeMondaySubRow> SubItems { get; set; } = [];
+    }
+
+    public record SomeMondaySubRow : MondaySubRow
+    {
+        [MondayColumnHeader("numeric_mm33ns9f")] public ColumnNumber? Qty { get; set; }
+    }
+
     public record User : MondayUser
     {
         
