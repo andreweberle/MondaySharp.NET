@@ -9,13 +9,14 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using GraphQL;
 using MondaySharp.NET.Application.Interfaces;
+using System.ComponentModel.DataAnnotations;
+using System.Collections;
 
 namespace MondaySharp.NET.Infrastructure.Utilities;
 
-public static partial class MondayUtilities
+internal static partial class MondayUtilities
 {
-    [GeneratedRegexAttribute(@"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])",
-        RegexOptions.Compiled)]
+    [GeneratedRegexAttribute(@"(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])", RegexOptions.Compiled)]
     private static partial Regex UrlFromStringExtractor();
 
     private static CultureInfo Culture => CultureInfo.CurrentCulture;
@@ -25,24 +26,36 @@ public static partial class MondayUtilities
     /// </summary>
     private static readonly Regex UrlRegex = UrlFromStringExtractor();
 
-
-    public static readonly Dictionary<Type, string> GetItemsQueryBuilder = new()
+    // Define the supported types and their corresponding query builders
+    internal static readonly Dictionary<Type, string> GetItemsQueryBuilder = new()
     {
         { typeof(Application.Entities.Group), @"group { id title color archived deleted position }" },
         { typeof(List<Asset>), @"assets { id name public_url url_thumbnail created_at }" },
         { typeof(List<Update>), @"updates (limit: 100) { id text_body }" },
+        { typeof(MondaySubRow),
+            @"subitems { 
+                id 
+                name
+                column_values {
+                  id
+                  text
+                  type
+                  value
+                }
+            }"
+        }
     };
 
     // Define the supported types and their corresponding error messages
-    public static readonly Dictionary<Type, string> UnsupportedTypes = new()
+    internal static readonly Dictionary<Type, string> UnsupportedTypes = new()
     {
         { typeof(Application.Entities.Group), "Multiple Group Properties Are Not Supported." },
         { typeof(List<Asset>), "Multiple Asset Properties Are Not Supported." },
         { typeof(List<Update>), "Multiple Update Properties Are Not Supported." }
     };
-    
+
     // https://developer.monday.com/api-reference/reference/column-values-v2#using-fragments-to-get-column-specific-fields
-    public static readonly Dictionary<Type, string> ColumnValueFragments = new()
+    internal static readonly Dictionary<Type, string> ColumnValueFragments = new()
     {
         {
             typeof(ColumnPeopleAndTeams),
@@ -64,7 +77,7 @@ public static partial class MondayUtilities
     /// <param name="item"></param>
     /// <param name="destination"></param>
     /// <returns></returns>
-    public static bool TryBindColumnData<T>(
+    internal static bool TryBindColumnData<T>(
         IReadOnlyDictionary<string, string> columnPropertyMap,
         IMondayBindableSource source,
         ref T destination)
@@ -75,29 +88,101 @@ public static partial class MondayUtilities
 
         Type destinationType = destination.GetType();
 
+        // Set the common properties if they exist in the destination type.
         SetPropertyIfExists(destinationType, "Group", source.Group, destination);
         SetPropertyIfExists(destinationType, "Assets", source.Assets, destination);
         SetPropertyIfExists(destinationType, "Updates", source.Updates, destination);
 
+        // Loop the main row column values and set the properties if they exist in the destination type.
         foreach (ColumnValue columnValue in source.ColumnValues.Where(x => x.Type != MondayColumnType.Subtasks))
         {
+            _ = TryBindColumnValue(columnPropertyMap, destination, destinationType, columnValue);
+        }
+
+        // Attempt to get any List of SubItems properties on the destination type. If they exist, we will attempt to bind the subitems to them.
+        PropertyInfo? subItemsProperty = destinationType.GetProperties()
+            .FirstOrDefault(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(List<>)
+                                 && p.PropertyType.GetGenericArguments()[0].BaseType == typeof(MondaySubRow));
+
+        // Get the subItems Type.
+        Type? subItemsDestinationType = subItemsProperty?.PropertyType.GetGenericArguments()
+            .FirstOrDefault(x => x.BaseType == typeof(MondaySubRow));
+
+        // Check if the subItem Type was found.
+        if (subItemsDestinationType == null) return true;
+
+        // Create the blueprint.
+        Type listType = typeof(List<>).MakeGenericType(subItemsDestinationType);
+
+        // Create the list instance.
+        IList? subItemList = (IList?)Activator.CreateInstance(listType);
+
+        // Check if the list was created.
+        if (subItemList == null) return true;
+
+        // If there are no subitem properties, we can return true at this point since there is nothing left to bind.
+        if (subItemsProperty == null || subItemsDestinationType == null) return true;
+
+        // Assign the subItemsList to the destination.
+        subItemsProperty.SetValue(destination, subItemList);
+
+        // Get the MondaySubRow default properties so we can ignore them when binding subitem column values.
+        HashSet<string> subItemDefaultProperties = [.. typeof(MondaySubRow).GetProperties().Select(p => p.Name)];
+
+        // Loop the subitem column values and set the properties if they exist in the destination type.
+        foreach (SubItem subItem in source.SubItems)
+        {
+            // Create a new instance of the subitem type and attempt to bind the column values to it.
+            object? subItemInstance = Activator.CreateInstance(subItemsDestinationType);
+
+            // If the subitem instance is null, continue to the next subitem.
+            if (subItemInstance == null) continue;
+
+            // Loop each of the default properties of the MondaySubRow and attempt
+            // to set them on the subitem instance if they exist in the destination type.
+            // We want to do this before setting the column values because the column values may have the same name as the default properties,
+            foreach (string defaultProperty in subItemDefaultProperties)
+            {
+                // Attempt to get the property value from the subitem.
+                PropertyInfo? property = subItemInstance.GetType().GetProperty(defaultProperty);
+
+                // Check if it was found, should be.
+                if (property == null) continue;
+
+                // Attempt to get the value from the subitem.
+               property.SetValue(subItemInstance, subItem.GetType().GetProperty(defaultProperty)?.GetValue(subItem));
+            }
+
+            // Loop the column values of the subitem and set the properties if they exist in the destination type.
+            foreach (ColumnValue columnValue in subItem.ColumnValues.Where(x => x.Type != MondayColumnType.Subtasks))
+            {
+                _ = TryBindColumnValue(columnPropertyMap, subItemInstance, subItemsDestinationType, columnValue);
+            }
+
+            // Add the subitem instance to the list of subitems on the destination instance.
+            subItemList.Add(subItemInstance);
+        }
+        
+        return true;
+
+        static bool TryBindColumnValue(IReadOnlyDictionary<string, string> columnPropertyMap, object destination, Type destinationType, ColumnValue columnValue)
+        {
             string? rawId = columnValue.Id;
-            if (string.IsNullOrWhiteSpace(rawId)) continue;
+            if (string.IsNullOrWhiteSpace(rawId)) return false;
 
             // normalize variants once
             string noSpaces = rawId.Replace(" ", "");
             string pascal = rawId.Length == 0 ? rawId : char.ToUpper(rawId[0], Culture) + rawId[1..];
 
-            if (!TryResolvePropertyName(columnPropertyMap, rawId, pascal, noSpaces, out string? propertyName)) continue;
-            if (string.IsNullOrWhiteSpace(propertyName)) continue;
+            if (!TryResolvePropertyName(columnPropertyMap, rawId, pascal, noSpaces, out string? propertyName)) return false;
+            if (string.IsNullOrWhiteSpace(propertyName)) return false;
 
             PropertyInfo? prop = destinationType.GetProperty(propertyName);
-            if (prop == null || !prop.CanWrite) continue;
+            if (prop == null || !prop.CanWrite) return false;
 
             prop.SetValue(destination, CreateColumnTypeInstance(columnValue.Type, columnValue));
+            return true;
         }
-
-        return true;
     }
     
     private static bool TryResolvePropertyName(
@@ -136,13 +221,35 @@ public static partial class MondayUtilities
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public static Dictionary<string, string> GetColumnPropertyMap<T>()
+    internal static Dictionary<string, string> GetColumnPropertyMap<T>()
     {
         // Create A Map Of Column Ids To Property Names.
         Dictionary<string, string> columnPropertyMap = [];
 
+        // Flatten The Type's Properties And Subitem Properties Into A Single List.
+        List<PropertyInfo> propertyInfos = [];
+
         // Loop Through All Properties In The Type.
         foreach (PropertyInfo property in typeof(T).GetProperties())
+        {
+            // Check If The Property Is A List Of Subitems.
+            if (property.PropertyType.IsGenericType 
+                && property.PropertyType.GetGenericTypeDefinition() == typeof(List<>)
+                && property.PropertyType.GetGenericArguments().FirstOrDefault()?.BaseType == typeof(MondaySubRow))
+            {
+                foreach (PropertyInfo subItemProperty in property.PropertyType.GetGenericArguments().FirstOrDefault()?.GetProperties() ?? [])
+                {
+                    propertyInfos.Add(subItemProperty);
+                }
+
+                continue;
+            }
+
+            propertyInfos.Add(property);
+        }
+
+        // Loop Through All Properties In The Type.
+        foreach (PropertyInfo property in propertyInfos)
         {
             // Attempt to get the MondayColumnHeaderAttribute.
             MondayColumnHeaderAttribute? mondayColumnHeaderAttribute =
@@ -172,7 +279,7 @@ public static partial class MondayUtilities
     /// <param name="column"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static object CreateColumnTypeInstance(MondayColumnType? columnType, ColumnValue column)
+    internal static object CreateColumnTypeInstance(MondayColumnType? columnType, ColumnValue column)
     {
         // Create The Column Type Instance.
         switch (columnType)
@@ -355,7 +462,7 @@ public static partial class MondayUtilities
     /// </summary>
     /// <param name="columnTypes"></param>
     /// <returns></returns>
-    public static string ToColumnValuesJson(this List<ColumnBaseType>? columnTypes)
+    internal static string ToColumnValuesJson(this List<ColumnBaseType>? columnTypes)
     {
         if (columnTypes == null || columnTypes.Count == 0) return string.Empty;
 
@@ -448,8 +555,8 @@ public static partial class MondayUtilities
             return false;
         }
     }
-    
-    public static IEnumerable<string> BuildErrorMessages(
+
+    internal static IEnumerable<string> BuildErrorMessages(
         IEnumerable<GraphQLError>? errors,
         IReadOnlyDictionary<string, object>? extensions)
     {
