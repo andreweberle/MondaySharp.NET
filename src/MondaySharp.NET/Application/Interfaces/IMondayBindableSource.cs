@@ -15,6 +15,7 @@ public interface IMondayBindableSource
     public Group? Group { get; }
 
     public IReadOnlyList<ColumnValue> ColumnValues { get; }
+    public IReadOnlyList<SubItem> SubItems { get; }
     public IReadOnlyList<Asset> Assets { get; }
     public IReadOnlyList<Update> Updates { get; }
 

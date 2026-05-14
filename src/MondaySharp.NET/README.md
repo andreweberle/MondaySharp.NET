@@ -1,221 +1,436 @@
 # MondaySharp.NET
 
-<!---
-[![Build Status](https://your-ci-service.com/your-username/your-repo/badge.svg)](https://your-ci-service.com/your-username/your-repo)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
--->
 
-MondaySharp.NET is a powerful and intuitive C# library for interacting with the Monday.com API. With this library,
-developers can seamlessly integrate Monday.com functionalities into their C# applications, making it easier than ever to
-manage and automate workflows.
+A C# library for interacting with the [Monday.com API](https://developer.monday.com/api-reference/docs). Map Monday.com boards to strongly-typed C# records, then read, create, update, and delete items with minimal boilerplate.
 
-## Features
+## Table of Contents
 
-- **Easy Integration**: Quickly integrate Monday.com features into your C# projects with a clean and straightforward
-  API.
-- **Full API Coverage**: Access the complete range of Monday.com API endpoints, allowing you to interact with boards,
-  items, columns, and more.
-- **Type-Safe Models**: Benefit from type-safe models that reflect the structure of Monday.com entities, providing a
-  robust development experience.
-- **Asynchronous Support**: Leverage asynchronous methods for non-blocking communication with the Monday.com API,
-  ensuring optimal performance.
+- [Installation](#installation)
+- [Setup](#setup)
+- [Defining a Row](#defining-a-row)
+- [Reading Items](#reading-items)
+  - [All items on a board](#all-items-on-a-board)
+  - [Filter by column values](#filter-by-column-values)
+  - [By item ID(s)](#by-item-ids)
+  - [By cursor (pagination)](#by-cursor-pagination)
+  - [Including Groups, Assets, and Updates](#including-groups-assets-and-updates)
+  - [Including Sub-Items](#including-sub-items)
+- [Creating Items](#creating-items)
+  - [Using Item objects](#using-item-objects)
+  - [Using a MondayRow](#using-a-mondayrow)
+- [Updating Items](#updating-items)
+- [Deleting Items](#deleting-items)
+- [Sub-Items](#sub-items)
+  - [Reading sub-items](#reading-sub-items)
+  - [Creating sub-items](#creating-sub-items)
+- [Item Updates (Comments)](#item-updates-comments)
+- [File Uploads](#file-uploads)
+- [Boards](#boards)
+- [Users](#users)
+- [Supported Column Types](#supported-column-types)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Getting Started
-
-The library can be injected via Dependency Injection or you can initialize it manually.
-
-**Initializing**
-
-```csharp
-services.TryAddMondayClient(options =>
-{
-    options.EndPoint = new System.Uri(configuration["mondayUrl"]!);
-    options.Token = configuration["mondayToken"]!;
-});
-
-IMondayClient mondayClient = new MondayClient(this.Logger, options =>
-{
-    options.EndPoint = new System.Uri(configuration["mondayUrl"]!);
-    options.Token = configuration["mondayToken"]!;
-});
-```
-
-**Reading**<br>
-When binding your row to an object, you can create a record inheriting `MondayRow`
-
-```csharp
-public record TestRow : MondayRow
-{
-    [MondayColumnHeader("text0")]
-    public ColumnText? Text { get; set; }
-
-    [MondayColumnHeader("numbers9")]
-    public ColumnNumber? Number { get; set; }
-    public ColumnCheckBox? Checkbox { get; set; }
-    public ColumnStatus? Priority { get; set; }
-}
-```
-
-If you have a property that doesn't conform to your naming convention,
-you can simply add the `MondayColumnHeader` attribute, this will tell the client when attempting to bind the properties
-at runtime to look for this `columnId` instead of using the property name.
-
-If you need to include `Groups, Assets, Updates`  you can add them as a property.
-
-*Here are some example records that were used during testing to validate Assets, Updates and Group were successfully
-binding.*
-
-```csharp
-public record TestRowWithAssets : TestRow
-{
-    public List<Asset>? Assets { get; set; }
-}
-public record TestRowWithUpdates : TestRow
-{
-    public List<Update>? Updates { get; set; }
-}
-public record TestRowWithGroup : TestRow
-{
-    public Group? Group { get; set; }
-}
-```
-
-when the library is creating the query to read the item(s),
-it will detect if there are assets, updates or groups, it will then modify the query as needed.
-
-This way, we are not always requesting the assets, updates or groups, only when you need them.
-
-When required to read a column based
-from [ColumnValues](https://developer.monday.com/api-reference/docs/column-values-v2), you can do the following.
-
-```csharp
-ColumnValue[] columnValues =
-[
-    new ColumnValue()
-    {
-        Id = "text0",
-        Text = "123"
-    },
-    new ColumnValue()
-    {
-        Id = "numbers9",
-        Text = "1"
-    },
-];
-List<TestRow?> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId, columnValues).ToListAsync();
-```
-
-This will attempt to find any items for the `boardId` along with the `columnValues`.
-If you need items without using the `columnValues`, you can simply do the following
-
-*This will enumerate each result asynchronously*
-
-```csharp
-List<TestRow?> items = await this.MondayClient!.GetBoardItemsAsync<TestRow>(this.BoardId).ToListAsync();
-```
-
-**Creating**<br>
-when required to create an item, you can do the following
-
-```csharp
-Item[] items =[
-    new Item()
-    {
-        Name = "Test Item 1",
-        ColumnValues =
-        [
-            new ColumnValue()
-            {
-                ColumnBaseType = new ColumnText()
-                {
-                    Id = "text0",
-                    Text = "Andrew Eberle"
-                },
-            },
-            new ColumnValue()
-            {
-                ColumnBaseType = new ColumnNumber()
-                {
-                    Id = "numbers9",
-                    Number = 10
-                },
-            },
-        ]
-    },
-     new Item()
-    {
-        Name = "Test Item 2",
-        ColumnValues =
-        [
-            new ColumnValue()
-            {
-                ColumnBaseType = new ColumnText()
-                {
-                    Id = "text0",
-                    Text = "Eberle Andrew"
-                },
-            },
-            new ColumnValue()
-            {
-                ColumnBaseType = new ColumnNumber()
-                {
-                    Id = "numbers9",
-                    Number = 11
-                },
-            },
-        ]
-    }
-];
-
-Dictionary<string, Item>? keyValuePairs = await this.MondayClient!.CreateBoardItemsAsync(BoardId, items);
-```
-
-This will create items into monday with a single request similar to this
-https://developer.monday.com/api-reference/docs/introduction-to-graphql#sample-mutation-1
-
-There are any column types, some supported, some not as I'm still building the library.
-Here is a small example pulled from some unit tests.
-
-```csharp
-// Arrange
-List<ColumnBaseType> columnValues =
-[
-    new ColumnDateTime("date", new DateTime(2023, 11, 29)),
-    new ColumnText("text0", "Andrew Eberle"),
-    new ColumnNumber("numbers", 10),
-    new ColumnLongText("long_text7", "hello,world!"),
-    new ColumnStatus("status_19", "Test"),
-    new ColumnStatus("label", "Test"),
-    new ColumnLongText("long_text", "long text with return \n"),
-    new ColumnDropDown("dropdown", ["Hello", "World"]),
-    new ColumnLink("link", "https://www.google.com", "google!"),
-    new ColumnTag("tags", "21057674,21057675"),
-    new ColumnTimeline("timeline", new DateTime(2023, 11, 29), new DateTime(2023, 12, 29)),
-];
-```
-
-First provide the `columnId` and then filling the rest.
-
-Here is the interface thusfar.
-For detailed usage instructions and examples, refer to the [Documentation](./docs/).
+---
 
 ## Installation
-
-Install the MondaySharp.NET library using NuGet Package Manager:
 
 ```bash
 nuget install MondaySharp.NET
 ```
 
-## Contributing
+---
 
-We welcome contributions! Please check out our [Contributing Guidelines](./CONTRIBUTING.md) for details on how to get
-started.
+## Setup
 
-## License
+Register the client with dependency injection, or instantiate it directly.
 
-MondaySharp.NET is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+**Dependency Injection**
+
+```csharp
+services.TryAddMondayClient(options =>
+{
+    options.EndPoint = new Uri(configuration["mondayUrl"]!);
+    options.Token = configuration["mondayToken"]!;
+});
+```
+
+**Manual instantiation**
+
+```csharp
+IMondayClient mondayClient = new MondayClient(logger, options =>
+{
+    options.EndPoint = new Uri(configuration["mondayUrl"]!);
+    options.Token = configuration["mondayToken"]!;
+});
+```
 
 ---
 
-Feel free to customize this description to better fit the specific features and goals of your MondaySharp.NET library.
+## Defining a Row
+
+Create a record that inherits `MondayRow`. Each property maps to a Monday.com column by its **column ID**.
+
+```csharp
+public record ProjectRow : MondayRow
+{
+    // Property name matches the column ID (case-insensitive)
+    public ColumnStatus? Status { get; set; }
+
+    // Use [MondayColumnHeader] when the property name differs from the column ID
+    [MondayColumnHeader("text_abc123")]
+    public ColumnText? Description { get; set; }
+
+    [MondayColumnHeader("date_xyz789")]
+    public ColumnDateTime? DueDate { get; set; }
+
+    [MondayColumnHeader("numbers_def456")]
+    public ColumnNumber? Budget { get; set; }
+}
+```
+
+`MondayRow` provides `Id` (`ulong`) and `Name` (`string?`) automatically.
+
+---
+
+## Reading Items
+
+All read methods return a `MondayResponse<T>` which contains:
+
+| Property | Description |
+|---|---|
+| `IsSuccessful` | Whether the request succeeded |
+| `Response` | `List<MondayData<T>>` — each item wrapped in `MondayData<T>.Data` |
+| `Cursor` | Pagination cursor for the next page |
+| `HasMore` | `true` when a next page is available |
+| `Errors` | `HashSet<string>` of error messages, or `null` |
+
+### All items on a board
+
+```csharp
+MondayResponse<ProjectRow> response = await mondayClient.GetBoardItemsAsync<ProjectRow>(boardId);
+
+foreach (MondayData<ProjectRow> entry in response.Response ?? [])
+{
+    ProjectRow row = entry.Data!;
+    Console.WriteLine($"{row.Id}: {row.Name}");
+}
+```
+
+An optional `limit` parameter controls page size (default `25`, max `500`).
+
+```csharp
+MondayResponse<ProjectRow> response = await mondayClient.GetBoardItemsAsync<ProjectRow>(boardId, limit: 100);
+```
+
+### Filter by column values
+
+```csharp
+ColumnValue[] filters =
+[
+    new() { Id = "text_abc123", Text = "Andrew Eberle" },
+];
+
+MondayResponse<ProjectRow> response =
+    await mondayClient.GetBoardItemsAsync<ProjectRow>(boardId, filters);
+```
+
+### By item ID(s)
+
+```csharp
+MondayResponse<ProjectRow> response =
+    await mondayClient.GetBoardItemsAsync<ProjectRow>([itemId1, itemId2]);
+```
+
+### By cursor (pagination)
+
+Use `HasMore` and `Cursor` to page through large boards.
+
+```csharp
+MondayResponse<ProjectRow> page = await mondayClient.GetBoardItemsAsync<ProjectRow>(boardId, limit: 50);
+
+while (page.HasMore)
+{
+    page = await mondayClient.GetBoardItemsAsync<ProjectRow>(page.Cursor, limit: 50);
+    // process page.Response ...
+}
+```
+
+### Including Groups, Assets, and Updates
+
+Add typed properties to your row record and the library will automatically include the relevant fields in the query.
+
+```csharp
+public record ProjectRowWithExtras : ProjectRow
+{
+    public Group? Group { get; set; }
+    public List<Asset>? Assets { get; set; }
+    public List<Update>? Updates { get; set; }
+}
+
+MondayResponse<ProjectRowWithExtras> response =
+    await mondayClient.GetBoardItemsAsync<ProjectRowWithExtras>(boardId);
+```
+
+---
+
+## Creating Items
+
+### Using Item objects
+
+```csharp
+Item[] items =
+[
+    new()
+    {
+        Name = "Project Alpha",
+        ColumnValues =
+        [
+            new() { ColumnBaseType = new ColumnText()     { Id = "text_abc123", Text = "Andrew Eberle" } },
+            new() { ColumnBaseType = new ColumnNumber()   { Id = "numbers_def456", Number = 10 } },
+            new() { ColumnBaseType = new ColumnStatus()   { Id = "status", Status = "In Progress" } },
+            new() { ColumnBaseType = new ColumnDateTime() { Id = "date_xyz789", Date = new DateTime(2024, 6, 1) } },
+        ]
+    },
+    new()
+    {
+        Name = "Project Beta",
+        ColumnValues =
+        [
+            new() { ColumnBaseType = new ColumnText() { Id = "text_abc123", Text = "Eberle Andrew" } },
+        ]
+    }
+];
+
+MondayResponse<Item> response = await mondayClient.CreateBoardItemsAsync(boardId, items);
+// response.Response[i].Data.Id is populated after creation
+```
+
+### Using a MondayRow
+
+When your record already holds the values you want to write, pass it directly. The library maps each property back to its column ID automatically.
+
+```csharp
+ProjectRow newRow = new()
+{
+    Name = "Project Gamma",
+    Description = new ColumnText() { Text = "Created via MondaySharp.NET" },
+    Budget      = new ColumnNumber() { Number = 5000 },
+    Status      = new ColumnStatus() { Status = "In Progress" },
+    DueDate     = new ColumnDateTime() { Date = new DateTime(2024, 12, 31) },
+};
+
+MondayResponse<ProjectRow> response =
+    await mondayClient.CreateBoardItemsAsync<ProjectRow>(boardId, [newRow]);
+```
+
+---
+
+## Updating Items
+
+Use `UpdateBoardItemsAsync` with a populated row that already has its `Id` set.
+
+```csharp
+// Modify the row retrieved earlier
+existingRow.Status = new ColumnStatus() { Status = "Done" };
+existingRow.Name   = "Project Gamma (Completed)";
+
+MondayResponse<ProjectRow> response =
+    await mondayClient.UpdateBoardItemsAsync<ProjectRow>(boardId, [existingRow]);
+```
+
+---
+
+## Deleting Items
+
+```csharp
+// Delete by Item object (Id must be set)
+MondayResponse<Item> response = await mondayClient.DeleteItemsAsync([item1, item2]);
+```
+
+---
+
+## Sub-Items
+
+### Reading sub-items
+
+Define a record inheriting `MondaySubRow` to map the sub-item's columns, then add a `List<T>` property to your parent row. The library detects the property and includes `subitems { ... }` in the query automatically.
+
+```csharp
+public record TaskSubRow : MondaySubRow
+{
+    [MondayColumnHeader("status")]
+    public ColumnStatus? Status { get; set; }
+
+    [MondayColumnHeader("date0")]
+    public ColumnDateTime? DueDate { get; set; }
+
+    [MondayColumnHeader("numbers8")]
+    public ColumnNumber? Estimate { get; set; }
+}
+
+public record ProjectRowWithSubItems : ProjectRow
+{
+    public List<TaskSubRow> SubItems { get; set; } = [];
+}
+```
+
+```csharp
+MondayResponse<ProjectRowWithSubItems> response =
+    await mondayClient.GetBoardItemsAsync<ProjectRowWithSubItems>(boardId);
+
+foreach (MondayData<ProjectRowWithSubItems> entry in response.Response ?? [])
+{
+    foreach (TaskSubRow subItem in entry.Data!.SubItems)
+    {
+        Console.WriteLine($"  SubItem: {subItem.Name}, Status: {subItem.Status?.Status}");
+    }
+}
+```
+
+`MondaySubRow` provides `Id` and `Name` automatically, just like `MondayRow`.
+
+### Creating sub-items
+
+**Using Item objects**
+
+```csharp
+Item[] subItems =
+[
+    new()
+    {
+        Name = "Task 1",
+        ColumnValues =
+        [
+            new() { ColumnBaseType = new ColumnStatus()   { Id = "status", Status = "In Progress" } },
+            new() { ColumnBaseType = new ColumnDateTime() { Id = "date0",  Date = new DateTime(2024, 6, 1) } },
+        ]
+    },
+    new() { Name = "Task 2" }
+];
+
+MondayResponse<Item> response =
+    await mondayClient.CreateBoardSubItemsAsync(parentItemId, subItems);
+```
+
+**Using a MondayRow**
+
+```csharp
+TaskSubRow[] subRows =
+[
+    new() { Name = "Task 1", Status = new ColumnStatus() { Status = "In Progress" } },
+    new() { Name = "Task 2", Status = new ColumnStatus() { Status = "Done" } },
+];
+
+MondayResponse<TaskSubRow> response =
+    await mondayClient.CreateBoardSubItemsAsync<TaskSubRow>(parentItemId, subRows);
+```
+
+---
+
+## Item Updates (Comments)
+
+```csharp
+Update[] updates =
+[
+    new() { ItemId = itemId, TextBody = "First comment" },
+    new() { ItemId = itemId, TextBody = "Second comment" },
+];
+
+MondayResponse<Update> response = await mondayClient.CreateItemsUpdateAsync(updates);
+```
+
+---
+
+## File Uploads
+
+**Upload to a file column**
+
+```csharp
+item.FileUpload = new FileUpload()
+{
+    ColumnId      = "file_col123",
+    FileName      = "report.pdf",
+    StreamContent = new StreamContent(File.OpenRead("report.pdf")),
+};
+
+MondayResponse<Asset> response = await mondayClient.UploadFileToColumnAsync([item]);
+```
+
+**Upload to an item update**
+
+```csharp
+Update update = new()
+{
+    ItemId     = updateId,
+    FileUpload = new FileUpload()
+    {
+        FileName      = "attachment.txt",
+        StreamContent = new StreamContent(File.OpenRead("attachment.txt")),
+    }
+};
+
+MondayResponse<Asset> response = await mondayClient.UploadFileToUpdateAsync([update]);
+```
+
+---
+
+## Boards
+
+```csharp
+// Fetch specific boards
+MondayResponse<Board> response = await mondayClient.GetBoardsAsync([boardId1, boardId2]);
+
+// Fetch up to 10 boards (default)
+MondayResponse<Board> allBoards = await mondayClient.GetBoardsAsync();
+```
+
+---
+
+## Users
+
+Define a record inheriting `MondayUser` (`Id` and `Name` are provided automatically).
+
+```csharp
+public record AppUser : MondayUser { }
+
+// Fetch all users
+MondayResponse<AppUser> allUsers = await mondayClient.GetUsersAsync<AppUser>();
+
+// Fetch specific users by ID
+MondayResponse<AppUser> specificUsers = await mondayClient.GetUsersAsync<AppUser>([userId1, userId2]);
+```
+
+---
+
+## Supported Column Types
+
+| Type | Class |
+|---|---|
+| Text | `ColumnText` |
+| Number | `ColumnNumber` |
+| Status | `ColumnStatus` |
+| Date | `ColumnDateTime` |
+| Checkbox | `ColumnCheckBox` |
+| Long Text | `ColumnLongText` |
+| Dropdown | `ColumnDropDown` |
+| Link | `ColumnLink` |
+| Tags | `ColumnTag` |
+| Timeline | `ColumnTimeline` |
+| Email | `ColumnEmail` |
+| Phone | `ColumnPhone` |
+| Rating | `ColumnRating` |
+| Color Picker | `ColumnColorPicker` |
+| People & Teams | `ColumnPeopleAndTeams` |
+| File | `ColumnFile` |
+
+---
+
+## Contributing
+
+Contributions are welcome! Please read the [Contributing Guidelines](./CONTRIBUTING.md) before opening a pull request.
+
+## License
+
+MondaySharp.NET is licensed under the MIT License — see the [LICENSE](./LICENSE) file for details.

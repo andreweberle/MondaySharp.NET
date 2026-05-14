@@ -12,6 +12,7 @@ public sealed class ItemBindableSource(Item item) : IMondayBindableSource
     public Board? Board { get; } = item.Board;
     public Group? Group { get; } = item.Group;
     public IReadOnlyList<ColumnValue> ColumnValues { get; } = item.ColumnValues;
+    public IReadOnlyList<SubItem> SubItems { get; } = item.SubItems;
     public IReadOnlyList<Asset> Assets { get; } = item.Assets;
     public IReadOnlyList<Update> Updates { get; } = item.Updates;
     public FileUpload? FileUpload { get; } = item.FileUpload;
