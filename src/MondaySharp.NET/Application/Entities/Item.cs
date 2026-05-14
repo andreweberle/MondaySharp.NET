@@ -20,6 +20,8 @@ public record Item
 
     [JsonProperty("column_values")] public List<ColumnValue> ColumnValues { get; set; } = [];
 
+    [JsonProperty("subitems")] public List<SubItem> SubItems { get; set; } = [];
+
     [JsonProperty("assets")] public List<Asset> Assets { get; set; } = [];
 
     [JsonProperty("updates")] public List<Update> Updates { get; set; } = [];

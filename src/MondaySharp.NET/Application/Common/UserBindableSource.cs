@@ -13,7 +13,8 @@ public sealed class UserBindableSource(MondayUser user) : IMondayBindableSource
     public Board? Board { get; } = null;
     public Group? Group { get; } = null;
     public IReadOnlyList<ColumnValue> ColumnValues { get; } = [];
-    public IReadOnlyList<Asset> Assets { get; } 
-    public IReadOnlyList<Update> Updates { get; }
+    public IReadOnlyList<SubItem> SubItems { get; } = [];
+    public IReadOnlyList<Asset> Assets { get; } = [];
+    public IReadOnlyList<Update> Updates { get; } = [];
     public FileUpload? FileUpload { get; }
 }
