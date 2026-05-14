@@ -10,17 +10,17 @@
         <PackageDescription>This package contains a Monday.com client</PackageDescription>
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <Deterministic>False</Deterministic>
-        <Version>1.0.30</Version>
+        <Version>1.0.31</Version>
         <PackageProjectUrl>https://github.com/andreweberle/MondaySharp.NET/</PackageProjectUrl>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="GraphQL.Client" Version="6.0.2"/>
-        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.0.2"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0"/>
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0"/>
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0"/>
-        <PackageReference Include="System.Text.Json" Version="8.0.5"/>
+        <PackageReference Include="GraphQL.Client" Version="6.1.0" />
+        <PackageReference Include="GraphQL.Client.Serializer.Newtonsoft" Version="6.1.0" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+        <PackageReference Include="System.Text.Json" Version="8.0.5" />
     </ItemGroup>
 
 </Project>
