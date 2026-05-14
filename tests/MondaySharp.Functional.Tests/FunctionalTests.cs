@@ -59,7 +59,7 @@ public class FunctionalTests
         [
             new()
             {
-                Id = "text0",
+                Id = "text_mkmn7km4",
                 Text = "FROM UNIT TEST"
             }
         ];
@@ -85,7 +85,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "FROM UNIT TEST"
                     }
                 },
@@ -120,7 +120,7 @@ public class FunctionalTests
         [
             new()
             {
-                Id = "text0",
+                Id = "text_mkmn7km4",
                 Text = "FROM UNIT TEST"
             }
         ];
@@ -131,7 +131,7 @@ public class FunctionalTests
 
         // Assert
         Assert.IsTrue(items.Response?.Count > 0);
-        Assert.IsTrue(items.Response?.FirstOrDefault()?.Data?.Group?.Id == "new_group53864");
+        Assert.IsTrue(items.Response?.FirstOrDefault()?.Data?.Group?.Id == "topics");
     }
 
     [TestMethod]
@@ -142,7 +142,7 @@ public class FunctionalTests
         [
             new()
             {
-                Id = "text0",
+                Id = "text_mkmn7km4",
                 Text = "FROM UNIT TEST"
             }
         ];
@@ -154,7 +154,7 @@ public class FunctionalTests
                 Name = "Test Item 1",
                 Text = new ColumnText()
                 {
-                    Id = "text0",
+                    Id = "text_mkmn7km4",
                     Text = "FROM UNIT TEST"
                 }
             }
@@ -180,7 +180,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "FROM UNIT TEST"
                     }
                 }
@@ -197,7 +197,7 @@ public class FunctionalTests
         [
             new()
             {
-                Id = "text0",
+                Id = "text_mkmn7km4",
                 Text = "FROM UNIT TEST"
             },
         ];
@@ -224,7 +224,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Andrew Eberle"
                     },
                 },
@@ -251,7 +251,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Andrew Eberle"
                     }
                 },
@@ -297,7 +297,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Andrew Eberle"
                     },
                 },
@@ -355,13 +355,13 @@ public class FunctionalTests
         List<ColumnBaseType> columnValues =
         [
             new ColumnDateTime("date", new DateTime(2023, 11, 29)),
-            new ColumnText("text0", "Andrew Eberle"),
+            new ColumnText("text_mkmn7km4", "Andrew Eberle"),
             new ColumnNumber("numbers", 10),
             new ColumnLongText("long_text7", "hello,world!"),
             new ColumnStatus("status_19", "Test"),
             new ColumnStatus("label", "Test"),
             new ColumnLongText("long_text", "long text with return \n"),
-            new ColumnDropDown("dropdown", ["Hello", "World"]),
+            new ColumnDropDown("dropdown", ["1", "World"]),
             new ColumnLink("link", "https://www.google.com", "google!"),
             new ColumnTag("tags", "21057674,21057675"),
             new ColumnTimeline("timeline", new DateTime(2023, 11, 29), new DateTime(2023, 12, 29)),
@@ -379,7 +379,7 @@ public class FunctionalTests
 
         Assert.IsTrue(jsonDocument.RootElement.EnumerateObject().Count() == columnValues.Count);
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("date").GetProperty("date").GetString() == "2023-11-29");
-        Assert.IsTrue(jsonDocument.RootElement.GetProperty("text0").GetString() == "Andrew Eberle");
+        Assert.IsTrue(jsonDocument.RootElement.GetProperty("text_mkmn7km4").GetString() == "Andrew Eberle");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("numbers").GetString() == "10");
         Assert.IsTrue(jsonDocument.RootElement.GetProperty("long_text7").GetProperty("text").GetString() ==
                       "hello,world!");
@@ -413,14 +413,13 @@ public class FunctionalTests
             new()
             {
                 Name = "Test Item 1",
-                Group = new Group() { Id = "new_group53864" },
                 ColumnValues =
                 [
                     new ColumnValue()
                     {
                         ColumnBaseType = new ColumnText()
                         {
-                            Id = "text0",
+                            Id = "text_mkmn7km4",
                             Text = "Andrew Eberle"
                         }
                     },
@@ -445,14 +444,13 @@ public class FunctionalTests
             new()
             {
                 Name = "Test Item 2",
-                Group = new Group() { Id = "new_group53864" },
                 ColumnValues =
                 [
                     new ColumnValue()
                     {
                         ColumnBaseType = new ColumnText()
                         {
-                            Id = "text0",
+                            Id = "text_mkmn7km4",
                             Text = "Eberle Andrew"
                         }
                     },
@@ -530,7 +528,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Andrew Eberle"
                     }
                 },
@@ -585,7 +583,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "FROM UNIT TEST"
                     }
                 },
@@ -619,14 +617,13 @@ public class FunctionalTests
         Item item = new()
         {
             Name = "Test Item 1",
-            Group = new Group() { Id = "new_group53864" },
             ColumnValues =
             [
                 new ColumnValue()
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Andrew Eberle"
                     }
                 },
@@ -643,14 +640,13 @@ public class FunctionalTests
         Item item2 = new()
         {
             Name = "Test Item 2",
-            Group = new Group() { Id = "new_group53864" },
             ColumnValues =
             [
                 new ColumnValue()
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Eberle Andrew"
                     }
                 },
@@ -725,14 +721,13 @@ public class FunctionalTests
         Item item = new()
         {
             Name = "Test Item 1",
-            Group = new Group() { Id = "new_group53864" },
             ColumnValues =
             [
                 new ColumnValue()
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Andrew Eberle"
                     }
                 },
@@ -740,7 +735,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnNumber()
                     {
-                        Id = "numbers9",
+                        Id = "numeric_mm3b8h2c",
                         Number = 10
                     }
                 }
@@ -749,14 +744,13 @@ public class FunctionalTests
         Item item1 = new()
         {
             Name = "Test Item 2",
-            Group = new Group() { Id = "new_group53864" },
             ColumnValues =
             [
                 new ColumnValue()
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Andrew Eberle"
                     }
                 },
@@ -764,7 +758,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnNumber()
                     {
-                        Id = "numbers9",
+                        Id = "numeric_mm3b8h2c",
                         Number = 10
                     }
                 }
@@ -791,13 +785,13 @@ public class FunctionalTests
         {
             FileName = "test.txt",
             StreamContent = new StreamContent(File.OpenRead("test.txt")),
-            ColumnId = "files4"
+            ColumnId = "file_mm3bzz98"
         };
         FileUpload fileUpload1 = new()
         {
             FileName = "test.txt",
             StreamContent = new StreamContent(File.OpenRead("test.txt")),
-            ColumnId = "files4"
+            ColumnId = "file_mm3bzz98"
         };
 
         item.FileUpload = fileUpload;
@@ -848,7 +842,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Andrew Eberle"
                     }
                 },
@@ -957,7 +951,7 @@ public class FunctionalTests
             },
             Dropdown = new ColumnDropDown()
             {
-                Label = "Hello"
+                Label = "1"
             },
             LongText = new ColumnLongText()
             {
@@ -974,7 +968,7 @@ public class FunctionalTests
             },
             Status = new ColumnStatus()
             {
-                Status = "Done"
+                Status = "Complete"
             },
             Timeline = new ColumnTimeline()
             {
@@ -1043,7 +1037,7 @@ public class FunctionalTests
             },
             Dropdown = new ColumnDropDown()
             {
-                Label = "Hello"
+                Label = "1"
             },
             LongText = new ColumnLongText()
             {
@@ -1060,7 +1054,7 @@ public class FunctionalTests
             },
             Status = new ColumnStatus()
             {
-                Status = "Done"
+                Status = "Complete"
             },
             Timeline = new ColumnTimeline()
             {
@@ -1155,7 +1149,7 @@ public class FunctionalTests
             },
             Dropdown = new ColumnDropDown()
             {
-                Label = "Hello"
+                Label = "1"
             },
             LongText = new ColumnLongText()
             {
@@ -1172,7 +1166,7 @@ public class FunctionalTests
             },
             Status = new ColumnStatus()
             {
-                Status = "In Testing"
+                Status = "Complete"
             },
             Timeline = new ColumnTimeline()
             {
@@ -1225,7 +1219,7 @@ public class FunctionalTests
 
             Status = new ColumnStatus()
             {
-                Status = "Needs Review"
+                Status = "Complete"
             },
             DueDate = new ColumnDateTime()
             {
@@ -1263,7 +1257,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "Andrew Eberle"
                     }
                 },
@@ -1371,7 +1365,7 @@ public class FunctionalTests
     public async Task ZZZCleanup()
     {
         // Get All Items
-        NET.Application.MondayResponse<TestRow> items = await MondayClient!.GetBoardItemsAsync<TestRow>(BoardId);
+        NET.Application.MondayResponse<TestRow> items = await MondayClient!.GetBoardItemsAsync<TestRow>(BoardId, limit: 34);
 
         // Delete All Items
         await MondayClient!.DeleteItemsAsync([
@@ -1396,7 +1390,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text0",
+                        Id = "text_mkmn7km4",
                         Text = "FROM UNIT TEST"
                     }
                 }
@@ -1425,7 +1419,7 @@ public class FunctionalTests
             Name = "Test Item Create",
             Text = new ColumnText()
             {
-                Id = "text0",
+                Id = "text_mkmn7km4",
                 Text = "FROM UNIT TEST"
             }
         };
@@ -1451,7 +1445,7 @@ public class FunctionalTests
             Name = "Test Item Update Details For Issue 10",
             Group = new Group()
             {
-                Id = "new_group53864"
+                Id = "topics"
             },
             Text = new ColumnText()
             {
@@ -1506,7 +1500,7 @@ public class FunctionalTests
             Name = "Test Item Update Details For Issue 9",
             Group = new Group()
             {
-                Id = "new_group53864"
+                Id = "topics"
             },
             Text = new ColumnText()
             {
@@ -1566,7 +1560,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text__1",
+                        Id = "text_mkmn7km4",
                         Text = "Created with VS Test Case"
                     }
                 },
@@ -1575,14 +1569,14 @@ public class FunctionalTests
                     ColumnBaseType = new ColumnStatus()
                     {
                         Id = "status",
-                        StatusId = 1
+                        Status = "Complete"
                     }
                 },
                 new ColumnValue()
                 {
                     ColumnBaseType = new ColumnDateTime()
                     {
-                        Id = "date4",
+                        Id = "date_mkp02cdj",
                         Date = DateTime.Now
                     }
                 },
@@ -1591,8 +1585,8 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnDropDown()
                     {
-                        Id = "dropdown__1",
-                        LabelId = 1
+                        Id = "dropdown_mkp0raj0",
+                        Label = "1"
                     }
                 }
             ]
@@ -1615,7 +1609,7 @@ public class FunctionalTests
         {
             FileName = "test.txt",
             StreamContent = new StreamContent(File.OpenRead("test.txt")),
-            ColumnId = "files4"
+            ColumnId = "file_mm3bzz98"
         };
 
         item.FileUpload = fileUpload;
@@ -1644,7 +1638,7 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnText()
                     {
-                        Id = "text__1",
+                        Id = "text_mkmn7km4",
                         Text = "Update With File"
                     }
                 },
@@ -1653,14 +1647,14 @@ public class FunctionalTests
                     ColumnBaseType = new ColumnStatus()
                     {
                         Id = "status",
-                        StatusId = 1
+                        Status = "Complete"
                     }
                 },
                 new ColumnValue()
                 {
                     ColumnBaseType = new ColumnDateTime()
                     {
-                        Id = "date4",
+                        Id = "date_mkp02cdj",
                         Date = DateTime.Now
                     }
                 },
@@ -1669,8 +1663,8 @@ public class FunctionalTests
                 {
                     ColumnBaseType = new ColumnDropDown()
                     {
-                        Id = "dropdown__1",
-                        LabelId = 1
+                        Id = "dropdown_mkp0raj0",
+                        Label = "1"
                     }
                 }
             ]
@@ -1761,7 +1755,7 @@ public class FunctionalTests
             Name = "Test Item Create",
             XeroId = new ColumnText()
             {
-                Id = "text0",
+                Id = "text_mkmn7km4",
                 Text = "FROM UNIT TEST"
             }
         };
@@ -1854,7 +1848,7 @@ public class FunctionalTests
     
     public record Customer : MondayRow
     {
-        [MondayColumnHeader("text0")]
+        [MondayColumnHeader("text_mkmn7km4")]
         public ColumnText? XeroId { get; set; }
     }
     
@@ -1875,53 +1869,53 @@ public class FunctionalTests
 
     public record TestRow : MondayRow
     {
-        [MondayColumnHeader("text0")] public ColumnText? Text { get; set; }
+        [MondayColumnHeader("text_mkmn7km4")] public ColumnText? Text { get; set; }
 
-        [MondayColumnHeader("numbers9")] public ColumnNumber? Number { get; set; }
+        [MondayColumnHeader("numeric_mm3b8h2c")] public ColumnNumber? Number { get; set; }
 
-        [MondayColumnHeader("checkbox")] public ColumnCheckBox? Checkbox { get; set; }
+        [MondayColumnHeader("boolean_mm3b14em")] public ColumnCheckBox? Checkbox { get; set; }
 
-        [MondayColumnHeader("priority")] public ColumnStatus? Priority { get; set; }
+        [MondayColumnHeader("color_mm3b67fc")] public ColumnStatus? Priority { get; set; }
 
         [MondayColumnHeader("status")] public ColumnStatus? Status { get; set; }
 
-        [MondayColumnHeader("link2")] public ColumnLink? Link { get; set; }
+        [MondayColumnHeader("link_mm3b72c7")] public ColumnLink? Link { get; set; }
 
-        [MondayColumnHeader("dropdown")] public ColumnDropDown? Dropdown { get; set; }
+        [MondayColumnHeader("dropdown_mkp0raj0")] public ColumnDropDown? Dropdown { get; set; }
 
-        [MondayColumnHeader("date")] public ColumnDateTime? Date { get; set; }
+        [MondayColumnHeader("date_mkp02cdj")] public ColumnDateTime? Date { get; set; }
 
-        [MondayColumnHeader("long_text")] public ColumnLongText? LongText { get; set; }
+        [MondayColumnHeader("long_text_mm3brcnw")] public ColumnLongText? LongText { get; set; }
 
-        [MondayColumnHeader("color_picker")] public ColumnColorPicker? ColorPicker { get; set; }
+        [MondayColumnHeader("color_picker_mm3b6wfb")] public ColumnColorPicker? ColorPicker { get; set; }
 
-        [MondayColumnHeader("timeline")] public ColumnTimeline? Timeline { get; set; }
+        [MondayColumnHeader("timerange_mm3bf5ee")] public ColumnTimeline? Timeline { get; set; }
 
-        [MondayColumnHeader("tags")] public ColumnTag? Tags { get; set; }
+        [MondayColumnHeader("tag_mm3b8fga")] public ColumnTag? Tags { get; set; }
 
-        [MondayColumnHeader("email")] public ColumnEmail? Email { get; set; }
+        [MondayColumnHeader("email_mm3bgreq")] public ColumnEmail? Email { get; set; }
 
-        [MondayColumnHeader("rating")] public ColumnRating? Rating { get; set; }
+        [MondayColumnHeader("rating_mm3bxehc")] public ColumnRating? Rating { get; set; }
 
-        [MondayColumnHeader("phone_mknbw0n6")] public ColumnPhone? Phone { get; set; }
-        [MondayColumnHeader("multiple_person_mkz16gmv")] public ColumnPeopleAndTeams? Person0 { get; set; }
-        [MondayColumnHeader("multiple_person_mkz17a7w")] public ColumnPeopleAndTeams? Person1 { get; set; }
+        [MondayColumnHeader("phone_mm3bx68a")] public ColumnPhone? Phone { get; set; }
+        [MondayColumnHeader("multiple_person_mm3b64r2")] public ColumnPeopleAndTeams? Person0 { get; set; }
+        [MondayColumnHeader("multiple_person_mkz1hb61")] public ColumnPeopleAndTeams? Person1 { get; set; }
     }
 
     public record Test2Row : MondayRow
     {
-        [MondayColumnHeader("text0")] public ColumnText? Text { get; set; }
+        [MondayColumnHeader("text_mkmn7km4")] public ColumnText? Text { get; set; }
 
         public Group? Group { get; set; }
     }
 
     public record TestSubRow : MondayRow
     {
-        [MondayColumnHeader("color_mkz1z6k6")] public ColumnStatus? Status { get; set; }
+        [MondayColumnHeader("status")] public ColumnStatus? Status { get; set; }
 
-        [MondayColumnHeader("date6")] public ColumnDateTime? DueDate { get; set; }
+        [MondayColumnHeader("date0")] public ColumnDateTime? DueDate { get; set; }
 
-        [MondayColumnHeader("numbers8")] public ColumnNumber? Priority { get; set; }
+        [MondayColumnHeader("numeric_mkp05akm")] public ColumnNumber? Priority { get; set; }
     }
 
     // Fields currently on Test-Board
@@ -1931,12 +1925,12 @@ public class FunctionalTests
 
         [MondayColumnHeader("status")] public ColumnStatus? Status { get; set; }
 
-        [MondayColumnHeader("date")] public ColumnDateTime? Date { get; set; }
+        [MondayColumnHeader("date_mkp02cdj")] public ColumnDateTime? Date { get; set; }
 
-        [MondayColumnHeader("dropdown")] public ColumnDropDown? Dropdown { get; set; }
+        [MondayColumnHeader("dropdown_mkp0raj0")] public ColumnDropDown? Dropdown { get; set; }
 
-        [MondayColumnHeader("text0")] public ColumnText? Text { get; set; }
+        [MondayColumnHeader("text_mkmn7km4")] public ColumnText? Text { get; set; }
 
-        [MondayColumnHeader("files4")] public ColumnFile? Files { get; set; }
+        [MondayColumnHeader("file_mkp0y7rx")] public ColumnFile? Files { get; set; }
     }
 }
