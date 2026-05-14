@@ -316,13 +316,22 @@ public partial class MondayClient : IMondayClient, IDisposable
         // Get each property in instance.
         foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
         {
+            // Get the property type.
+            Type propertyType = propertyInfo.PropertyType;
+
+            // Get the effective type if the property is a list.
+            Type effectiveType = propertyType.IsGenericType &&
+                     propertyType.GetGenericTypeDefinition() == typeof(List<>)
+                ? propertyType.GetGenericArguments().FirstOrDefault()?.BaseType ?? propertyType
+                : propertyType;
+
             // Attempt to get the type from the GetItemsQueryBuilder
-            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
+            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(effectiveType, out string? query))
             {
                 // Append the query to the string builder.
                 itemsQueryStringBuilder.Append(query);
             }
-            else if (MondayUtilities.ColumnValueFragments.TryGetValue(propertyInfo.PropertyType, out string? fragment))
+            else if (MondayUtilities.ColumnValueFragments.TryGetValue(effectiveType, out string? fragment))
             {
                 columnValueFragments.Append(fragment);
             }
