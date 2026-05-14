@@ -14,8 +14,7 @@ A C# library for interacting with the [Monday.com API](https://developer.monday.
   - [Filter by column values](#filter-by-column-values)
   - [By item ID(s)](#by-item-ids)
   - [By cursor (pagination)](#by-cursor-pagination)
-  - [Including Groups, Assets, and Updates](#including-groups-assets-and-updates)
-  - [Including Sub-Items](#including-sub-items)
+  - [Including Groups, Assets, Updates, and Sub-Items](#including-groups-assets-updates-and-sub-items)
 - [Creating Items](#creating-items)
   - [Using Item objects](#using-item-objects)
   - [Using a MondayRow](#using-a-mondayrow)
@@ -157,9 +156,9 @@ while (page.HasMore)
 }
 ```
 
-### Including Groups, Assets, and Updates
+### Including Groups, Assets, Updates, and Sub-Items
 
-Add typed properties to your row record and the library will automatically include the relevant fields in the query.
+Add typed properties to your row record and the library will automatically include the relevant fields in the query. Only properties you declare are fetched — nothing extra is requested.
 
 ```csharp
 public record ProjectRowWithExtras : ProjectRow
@@ -167,11 +166,16 @@ public record ProjectRowWithExtras : ProjectRow
     public Group? Group { get; set; }
     public List<Asset>? Assets { get; set; }
     public List<Update>? Updates { get; set; }
+
+    // Any List<T> where T : MondayRow triggers sub-item fetching
+    public List<TaskSubRow> Tasks { get; set; } = [];
 }
 
 MondayResponse<ProjectRowWithExtras> response =
     await mondayClient.GetBoardItemsAsync<ProjectRowWithExtras>(boardId);
 ```
+
+See [Sub-Items](#sub-items) for the full sub-item read/create reference.
 
 ---
 
@@ -255,10 +259,10 @@ MondayResponse<Item> response = await mondayClient.DeleteItemsAsync([item1, item
 
 ### Reading sub-items
 
-Define a record inheriting `MondaySubRow` to map the sub-item's columns, then add a `List<T>` property to your parent row. The library detects the property and includes `subitems { ... }` in the query automatically.
+Define a record inheriting `MondayRow` to map the sub-item's columns, then add a `List<T>` property to your parent row. The library detects any `List<T>` where `T : MondayRow` and automatically includes `subitems { ... }` in the query. The property can have any name.
 
 ```csharp
-public record TaskSubRow : MondaySubRow
+public record TaskSubRow : MondayRow
 {
     [MondayColumnHeader("status")]
     public ColumnStatus? Status { get; set; }
@@ -272,7 +276,7 @@ public record TaskSubRow : MondaySubRow
 
 public record ProjectRowWithSubItems : ProjectRow
 {
-    public List<TaskSubRow> SubItems { get; set; } = [];
+    public List<TaskSubRow> Tasks { get; set; } = [];
 }
 ```
 
@@ -282,14 +286,14 @@ MondayResponse<ProjectRowWithSubItems> response =
 
 foreach (MondayData<ProjectRowWithSubItems> entry in response.Response ?? [])
 {
-    foreach (TaskSubRow subItem in entry.Data!.SubItems)
+    foreach (TaskSubRow task in entry.Data!.Tasks)
     {
-        Console.WriteLine($"  SubItem: {subItem.Name}, Status: {subItem.Status?.Status}");
+        Console.WriteLine($"  Task: {task.Name}, Status: {task.Status?.Status}");
     }
 }
 ```
 
-`MondaySubRow` provides `Id` and `Name` automatically, just like `MondayRow`.
+`Id` and `Name` are inherited from `MondayRow` and populated automatically.
 
 ### Creating sub-items
 

@@ -32,13 +32,13 @@ internal static partial class MondayUtilities
         { typeof(Application.Entities.Group), @"group { id title color archived deleted position }" },
         { typeof(List<Asset>), @"assets { id name public_url url_thumbnail created_at }" },
         { typeof(List<Update>), @"updates (limit: 100) { id text_body }" },
-        { typeof(MondaySubRowLite),
+        { typeof(MondaySubRow),
             @"subitems { 
                 id 
                 name
             }"
         },
-        { typeof(MondaySubRow),
+        { typeof(MondayRow),
             @"subitems { 
                 id 
                 name
@@ -109,13 +109,13 @@ internal static partial class MondayUtilities
         PropertyInfo? subItemsProperty = destinationType.GetProperties()
             .FirstOrDefault(p => p.PropertyType.IsGenericType && p.PropertyType.GetGenericTypeDefinition() == typeof(List<>)
             && (
-                p.PropertyType.GetGenericArguments().FirstOrDefault()?.BaseType == typeof(MondaySubRow)) || 
-                p.PropertyType.GetGenericArguments().FirstOrDefault() == typeof(MondaySubRow)
+                p.PropertyType.GetGenericArguments().FirstOrDefault()?.BaseType == typeof(MondayRow)) || 
+                p.PropertyType.GetGenericArguments().FirstOrDefault() == typeof(MondayRow)
             );
 
         // Get the subItems Type.
         Type? subItemsDestinationType = subItemsProperty?.PropertyType.GetGenericArguments()
-            .FirstOrDefault(x => x.BaseType == typeof(MondaySubRow) || x == typeof(MondaySubRow));
+            .FirstOrDefault(x => x.BaseType == typeof(MondayRow) || x == typeof(MondayRow));
 
         // Check if the subItem Type was found.
         if (subItemsDestinationType == null) return true;
@@ -136,7 +136,7 @@ internal static partial class MondayUtilities
         subItemsProperty.SetValue(destination, subItemList);
 
         // Get the MondaySubRow default properties so we can ignore them when binding subitem column values.
-        HashSet<string> subItemDefaultProperties = [.. typeof(MondaySubRow).GetProperties().Select(p => p.Name)];
+        HashSet<string> subItemDefaultProperties = [.. typeof(MondayRow).GetProperties().Select(p => p.Name)];
 
         // Loop the subitem column values and set the properties if they exist in the destination type.
         foreach (SubItem subItem in source.SubItems)
@@ -244,7 +244,7 @@ internal static partial class MondayUtilities
             // Check If The Property Is A List Of Subitems.
             if (property.PropertyType.IsGenericType 
                 && property.PropertyType.GetGenericTypeDefinition() == typeof(List<>)
-                && property.PropertyType.GetGenericArguments().FirstOrDefault()?.BaseType == typeof(MondaySubRow))
+                && property.PropertyType.GetGenericArguments().FirstOrDefault()?.BaseType == typeof(MondayRow))
             {
                 foreach (PropertyInfo subItemProperty in property.PropertyType.GetGenericArguments().FirstOrDefault()?.GetProperties() ?? [])
                 {
