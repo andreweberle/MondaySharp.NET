@@ -440,15 +440,16 @@ public static partial class MondayUtilities
                 // Get the first mirrored item to determine the type of the mirror column
                 MirrorItem? firstMirrorItem = column.MirroredItems.FirstOrDefault();
 
+                // If the first mirrored item is null or has a null mirrored value, throw an exception as we cannot determine the mirror column type
+                if (firstMirrorItem?.MirroredValue == null)
+                {
+                    throw new InvalidOperationException($"The first mirrored item in column '{column.Id}' has a null mirrored value, cannot determine mirror column type.");
+                }
+
                 // Check all mirrored items to ensure they are of the same type, if not throw an exception
                 if (column.MirroredItems.Any(item => item.MirroredValue?.GetType() != firstMirrorItem?.MirroredValue?.GetType()))
                 {
                     throw new InvalidOperationException($"Inconsistent mirrored value types in column '{column.Id}'. All mirrored items must be of the same type.");
-                }
-
-                if (firstMirrorItem?.MirroredValue == null)
-                {
-                    throw new InvalidOperationException($"The first mirrored item in column '{column.Id}' has a null mirrored value, cannot determine mirror column type.");
                 }
 
                 if (!SupportedMirrorColumnTypes.TryGetValue(firstMirrorItem.MirroredValue.Type, out Type? mirrorColumnType))
@@ -488,7 +489,7 @@ public static partial class MondayUtilities
                 Type mirrorColumnInstanceType = typeof(ColumnMirror<>).MakeGenericType([mirrorColumnType]);
 
                 // Create the mirror column instance
-                var mirrorColumnInstance = Activator.CreateInstance(mirrorColumnInstanceType, column.Id, list) 
+                object mirrorColumnInstance = Activator.CreateInstance(mirrorColumnInstanceType, column.Id, list)
                     ?? throw new InvalidOperationException($"Failed to create mirror column instance for type {mirrorColumnInstanceType}");
 
                 return mirrorColumnInstance;
