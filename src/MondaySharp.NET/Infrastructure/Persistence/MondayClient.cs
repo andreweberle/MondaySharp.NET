@@ -159,21 +159,9 @@ public partial class MondayClient : IMondayClient, IDisposable
         // Create New
         StringBuilder itemsQueryStringBuilder = new();
         StringBuilder columnValueFragments = new();
-        
-        // Get each property in instance.
-        foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
-        {
-            // Attempt to get the type from the GetItemsQueryBuilder
-            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
-            {
-                // Append the query to the string builder.
-                itemsQueryStringBuilder.Append(query);
-            }
-            else if (MondayUtilities.ColumnValueFragments.TryGetValue(propertyInfo.PropertyType, out string? fragment))
-            {
-                columnValueFragments.Append(fragment);
-            }
-        }
+
+        // Append The Property Fragments To The String Builder.
+        AppendPropertyFragments(instance, itemsQueryStringBuilder, columnValueFragments);
 
         // Construct the GraphQL query
         GraphQLRequest keyValuePairs = new()
@@ -312,30 +300,9 @@ public partial class MondayClient : IMondayClient, IDisposable
         // Create New
         StringBuilder itemsQueryStringBuilder = new();
         StringBuilder columnValueFragments = new();
-        
-        // Get each property in instance.
-        foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
-        {
-            // Get the property type.
-            Type propertyType = propertyInfo.PropertyType;
 
-            // Get the effective type if the property is a list.
-            Type effectiveType = propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>)
-                ? propertyType.GetGenericArguments().FirstOrDefault() == typeof(MondaySubRow) ? typeof(MondaySubRowLite)
-                    :  propertyType.GetGenericArguments().FirstOrDefault()?.BaseType ?? propertyType
-                : propertyType;
-
-            // Attempt to get the type from the GetItemsQueryBuilder
-            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(effectiveType, out string? query))
-            {
-                // Append the query to the string builder.
-                itemsQueryStringBuilder.Append(query);
-            }
-            else if (MondayUtilities.ColumnValueFragments.TryGetValue(effectiveType, out string? fragment))
-            {
-                columnValueFragments.Append(fragment);
-            }
-        }
+        // Append The Property Fragments To The String Builder.
+        AppendPropertyFragments(instance, itemsQueryStringBuilder, columnValueFragments);
 
         // Construct the GraphQL query
         GraphQLRequest keyValuePairs = new()
@@ -381,14 +348,14 @@ public partial class MondayClient : IMondayClient, IDisposable
 
         // Get The Column Property Map.
         Dictionary<string, string> columnPropertyMap = MondayUtilities.GetColumnPropertyMap<T>();
-        
+
         // Create New Instance Of MondayResponse.
         MondayResponse<T> mondayResponse = new()
         {
             IsSuccessful = true,
             Response = []
         };
-        
+
         // Loop through each item
         foreach (Item item in graphQLResponse.Data.Items)
         {
@@ -403,7 +370,7 @@ public partial class MondayClient : IMondayClient, IDisposable
             }
             // Create New Instance Of T Type.
             T dataInstance = Activator.CreateInstance<T>();
-            
+
             // Attempt To Bind The Items.
             if (MondayUtilities.TryBindColumnData(columnPropertyMap!, new ItemBindableSource(item), ref dataInstance))
             {
@@ -417,6 +384,33 @@ public partial class MondayClient : IMondayClient, IDisposable
 
         // Return The Response.
         return mondayResponse;
+    }
+
+    private static void AppendPropertyFragments<T>(T instance, StringBuilder itemsQueryStringBuilder, StringBuilder columnValueFragments) where T : MondayRow, new()
+    {
+        // Get each property in instance.
+        foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
+        {
+            // Get the property type.
+            Type propertyType = propertyInfo.PropertyType;
+
+            // Get the effective type if the property is a list.
+            Type effectiveType = propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(List<>)
+                ? propertyType.GetGenericArguments().FirstOrDefault() == typeof(MondaySubRow) ? typeof(MondaySubRowLite)
+                    : propertyType.GetGenericArguments().FirstOrDefault()?.BaseType ?? propertyType
+                : propertyType;
+
+            // Attempt to get the type from the GetItemsQueryBuilder
+            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(effectiveType, out string? query))
+            {
+                // Append the query to the string builder.
+                itemsQueryStringBuilder.Append(query);
+            }
+            else if (MondayUtilities.ColumnValueFragments.TryGetValue(effectiveType, out string? fragment))
+            {
+                columnValueFragments.Append(fragment);
+            }
+        }
     }
 
 
@@ -477,21 +471,9 @@ public partial class MondayClient : IMondayClient, IDisposable
         // Create New
         StringBuilder itemsQueryStringBuilder = new();
         StringBuilder columnValueFragments = new();
-        
-        // Get each property in instance.
-        foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
-        {
-            // Attempt to get the type from the GetItemsQueryBuilder
-            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
-            {
-                // Append the query to the string builder.
-                itemsQueryStringBuilder.Append(query);
-            }
-            else if (MondayUtilities.ColumnValueFragments.TryGetValue(propertyInfo.PropertyType, out string? fragment))
-            {
-                columnValueFragments.Append(fragment);
-            }
-        }
+
+        // Append The Property Fragments To The String Builder.
+        AppendPropertyFragments(instance, itemsQueryStringBuilder, columnValueFragments);
 
         // Construct the GraphQL query
         GraphQLRequest keyValuePairs = new()
@@ -1396,21 +1378,9 @@ public partial class MondayClient : IMondayClient, IDisposable
         // Create New
         StringBuilder itemsQueryStringBuilder = new();
         StringBuilder columnValueFragments = new();
-        
-        // Get each property in instance.
-        foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
-        {
-            // Attempt to get the type from the GetItemsQueryBuilder
-            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
-            {
-                // Append the query to the string builder.
-                itemsQueryStringBuilder.Append(query);
-            }
-            else if (MondayUtilities.ColumnValueFragments.TryGetValue(propertyInfo.PropertyType, out string? fragment))
-            {
-                columnValueFragments.Append(fragment);
-            }
-        }
+
+        // Append The Property Fragments To The String Builder.
+        AppendPropertyFragments(instance, itemsQueryStringBuilder, columnValueFragments);
 
         // Construct the GraphQL query
         GraphQLRequest keyValuePairs = new()
@@ -2113,21 +2083,9 @@ public partial class MondayClient : IMondayClient, IDisposable
         // Create New
         StringBuilder itemsQueryStringBuilder = new();
         StringBuilder columnValueFragments = new();
-        
-        // Get each property in instance.
-        foreach (PropertyInfo propertyInfo in instance.GetType().GetProperties())
-        {
-            // Attempt to get the type from the GetItemsQueryBuilder
-            if (MondayUtilities.GetItemsQueryBuilder.TryGetValue(propertyInfo.PropertyType, out string? query))
-            {
-                // Append the query to the string builder.
-                itemsQueryStringBuilder.Append(query);
-            }
-            else if (MondayUtilities.ColumnValueFragments.TryGetValue(propertyInfo.PropertyType, out string? fragment))
-            {
-                columnValueFragments.Append(fragment);
-            }
-        }
+
+        // Append The Property Fragments To The String Builder.
+        AppendPropertyFragments(instance, itemsQueryStringBuilder, columnValueFragments);
 
         // Construct the GraphQL query
         GraphQLRequest keyValuePairs = new()
