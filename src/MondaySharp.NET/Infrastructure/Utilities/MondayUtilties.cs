@@ -11,6 +11,7 @@ using GraphQL;
 using MondaySharp.NET.Application.Interfaces;
 using System.ComponentModel.DataAnnotations;
 using System.Collections;
+using System.Text;
 
 namespace MondaySharp.NET.Infrastructure.Utilities;
 
@@ -460,6 +461,44 @@ internal static partial class MondayUtilities
                 // Return the column people and teams
                 return new ColumnPeopleAndTeams(column.Id, peopleAndTeams);
             }
+            
+            case MondayColumnType.Last_Updated:
+                
+                DateTimeOffset? date = null;
+                ulong? updaterId = null;
+                
+                if (string.IsNullOrEmpty(column.Value))
+                {
+                    return new ColumnLastUpdated(column.Id, null, null);
+                }
+                
+                try
+                {
+                    // Attempt to parse the JSON string.
+                    using JsonDocument jsonDocument = JsonDocument.Parse(column.Value);
+
+                    // Attempt to read the date, it should always be there, but just in case
+                    if (jsonDocument.RootElement.TryGetProperty("updated_at", out JsonElement dateElement) &&
+                        DateTimeOffset.TryParse(dateElement.GetString(), out DateTimeOffset parsedDate))
+                    {
+                        // Set the date
+                        date = parsedDate;
+                    }
+                    
+                    // Attempt to read the updater_id, it should always be there, but just in case
+                    if (jsonDocument.RootElement.TryGetProperty("updater_id", out JsonElement updaterIdElement) && 
+                        ulong.TryParse(updaterIdElement.GetString(), out ulong parsedId))
+                    {
+                        // Set the updater id
+                        updaterId = parsedId;
+                    }
+                }
+                catch (JsonException)
+                {
+                    // Ignore the exception, we just want to return the default value
+                }
+ 
+                return new ColumnLastUpdated(column.Id, date, updaterId);
             
             default:
                 throw new ArgumentException($"Unsupported column type: {columnType}");

@@ -12,6 +12,8 @@ public record ColumnValue
     [JsonProperty("column")] public Column? Column { get; set; }
 
     [JsonProperty("text")] public string? Text { get; set; }
+    
+    [JsonProperty("value")] public string? Value { get; set; }
 
     [JsonProperty("type")] public MondayColumnType Type { get; set; }
 
