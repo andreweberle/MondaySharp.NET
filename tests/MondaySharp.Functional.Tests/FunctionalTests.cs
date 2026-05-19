@@ -1837,6 +1837,7 @@ public class FunctionalTests
 
     public record SomeMondaySubRow : MondayRow
     {
+        [MondayColumnHeader("pulse_updated_mm3gm5c2")] public ColumnLastUpdated? LastUpdated { get; set; }
         [MondayColumnHeader("numeric_mm33ns9f")] public ColumnNumber? Qty { get; set; }
     }
 
