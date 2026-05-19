@@ -424,6 +424,7 @@ MondayResponse<AppUser> specificUsers = await mondayClient.GetUsersAsync<AppUser
 | Color Picker | `ColumnColorPicker` |
 | People & Teams | `ColumnPeopleAndTeams` |
 | File | `ColumnFile` |
+| LastUpdated | `LastUpdated`
 
 ---
 
