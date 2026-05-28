@@ -1,6 +1,3 @@
-using System.Globalization;
-using MondaySharp.NET.Application.Attributes;
-
 namespace MondaySharp.NET.Application.Interfaces;
 
 public interface IMondayIdentity

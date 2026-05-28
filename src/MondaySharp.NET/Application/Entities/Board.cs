@@ -34,7 +34,7 @@ public record Board
 
     [JsonProperty("board_folder_id")]
     [JsonConverter(typeof(StringToULongJsonConverter))]
-    public ulong BoardFolderId { get; set; }
+    public ulong? BoardFolderId { get; set; }
 
     [JsonProperty("item_terminology")] public string? ItemTerminology { get; set; }
 

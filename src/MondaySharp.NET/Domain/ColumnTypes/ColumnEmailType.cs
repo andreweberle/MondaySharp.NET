@@ -5,7 +5,7 @@ public record ColumnEmail : ColumnBaseType
     public string? Email { get; set; }
 
     /// <summary>
-    /// The email label disply text
+    /// The email label display text
     /// </summary>
     public string? Message { get; set; }
 

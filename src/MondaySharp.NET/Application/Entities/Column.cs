@@ -1,5 +1,4 @@
-﻿using MondaySharp.NET.Application.JsonConverters;
-using MondaySharp.NET.Domain.Common.Enums;
+﻿using MondaySharp.NET.Domain.Common.Enums;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
