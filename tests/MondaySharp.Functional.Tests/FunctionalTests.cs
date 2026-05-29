@@ -710,7 +710,7 @@ public class FunctionalTests
         NET.Application.MondayResponse<Board> boards = await MondayClient!.GetBoardsAsync();
 
         // Assert
-        Assert.IsTrue(boards.Response?.Count <= 10);
+        Assert.IsTrue(boards.Response?.Count <=10);
     }
 
     [TestMethod]
@@ -1833,7 +1833,7 @@ public class FunctionalTests
     public async Task GetBoardItemsAsync_HasNullBoardFolderId_Should_Be_Ok()
     {
         // Arrange
-        ulong boardId = 0; //TODO Set boardId to a test board that has a null board_folder_id
+        ulong boardId = this.BoardId;
         int limit = 10;
 
         // Act
