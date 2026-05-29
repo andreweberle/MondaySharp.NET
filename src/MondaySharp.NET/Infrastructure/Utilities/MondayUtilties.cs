@@ -1,17 +1,17 @@
-﻿using MondaySharp.NET.Application.Attributes;
+﻿using GraphQL;
+
+using MondaySharp.NET.Application.Attributes;
 using MondaySharp.NET.Application.Entities;
+using MondaySharp.NET.Application.Interfaces;
 using MondaySharp.NET.Domain.ColumnTypes;
 using MondaySharp.NET.Domain.Common;
 using MondaySharp.NET.Domain.Common.Enums;
+
+using System.Collections;
 using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using GraphQL;
-using MondaySharp.NET.Application.Interfaces;
-using System.ComponentModel.DataAnnotations;
-using System.Collections;
-using System.Text;
 
 namespace MondaySharp.NET.Infrastructure.Utilities;
 
@@ -23,7 +23,7 @@ internal static partial class MondayUtilities
     private static CultureInfo Culture => CultureInfo.CurrentCulture;
 
     /// <summary>
-    /// Extact's A Url From The Given String Type.
+    /// Extracts A Url From The Given String Type.
     /// </summary>
     private static readonly Regex UrlRegex = UrlFromStringExtractor();
 

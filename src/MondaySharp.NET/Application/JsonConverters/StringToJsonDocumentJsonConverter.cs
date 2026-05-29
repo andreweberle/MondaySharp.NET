@@ -1,10 +1,7 @@
 ﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace MondaySharp.NET.Application.JsonConverters;
 
@@ -18,7 +15,7 @@ internal class StringToJsonDocumentJsonConverter : JsonConverter<JsonDocument?>
             (reader.TokenType == JsonToken.String && string.IsNullOrEmpty(reader.Value?.ToString()))) return default;
 
         // Create Utf8JsonReader.
-        Utf8JsonReader utf8JsonReader = new(Encoding.UTF8.GetBytes(reader.Value.ToString()!));
+        Utf8JsonReader utf8JsonReader = new(Encoding.UTF8.GetBytes(reader.Value!.ToString()!));
 
         if (JsonDocument.TryParseValue(ref utf8JsonReader, out JsonDocument? result))
         {

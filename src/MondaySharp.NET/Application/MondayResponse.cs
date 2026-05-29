@@ -1,7 +1,4 @@
-﻿using MondaySharp.NET.Domain.Common;
-using Newtonsoft.Json;
-
-namespace MondaySharp.NET.Application;
+﻿namespace MondaySharp.NET.Application;
 
 public record MondayResponse<T>
 {

@@ -1687,14 +1687,9 @@ public partial class MondayClient : IMondayClient, IDisposable
         // Create parameters for the query
         StringBuilder parameters = new();
 
-        // Append the parameters
-        parameters.Append("$limit: Int,");
 
         // Create a dictionary to store variables dynamically
-        Dictionary<string, object> variables = new()
-        {
-            { "limit", limit }
-        };
+        Dictionary<string, object> variables = [];
 
         // Check if the board ids are not null and the length is greater than 0
         if (boardIds is not null && boardIds.Length > 0)
@@ -1703,12 +1698,18 @@ public partial class MondayClient : IMondayClient, IDisposable
             parameters.Append("$boardIds: [ID!],");
             variables.Add("boardIds", boardIds);
         }
+        else
+        {
+            // Append the parameters
+            parameters.Append("$limit: Int,");
+            variables.Add("limit", limit);
+        }
 
         // Construct the GraphQL query
         GraphQLRequest keyValuePairs = new()
         {
             Query = $@"query ({parameters}) {{
-            boards(limit: $limit{(boardIds is not null && boardIds.Length > 0 ? ",ids: $boardIds" : "")})  
+            boards({(boardIds is null || boardIds.Length == 0 ? "limit: $limit" : "")} {(boardIds is not null && boardIds.Length > 0 ? ",ids: $boardIds" : "")})  
             {RESPONSE_PARAMS}
             }}",
             Variables = variables

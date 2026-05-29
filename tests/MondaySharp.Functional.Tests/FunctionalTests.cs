@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
 using MondaySharp.NET.Application.Attributes;
 using MondaySharp.NET.Application.Entities;
 using MondaySharp.NET.Application.Interfaces;
@@ -8,8 +9,8 @@ using MondaySharp.NET.Domain.Common;
 using MondaySharp.NET.Domain.Common.Enums;
 using MondaySharp.NET.Infrastructure.Extensions;
 using MondaySharp.NET.Infrastructure.Utilities;
+
 using System.Text.Json;
-using MondaySharp.NET.Application;
 
 namespace MondaySharp.Functional.Tests;
 
@@ -53,7 +54,7 @@ public class FunctionalTests
     {
         // Arrange
         await this.TestBoard_CreateItem_Should_Be_Ok();
-        
+
         // Arrange
         ColumnValue[] columnValues =
         [
@@ -114,7 +115,7 @@ public class FunctionalTests
     public async Task GetItemsByColumnValuesWithGroup_Should_Be_OkAsync()
     {
         await this.TestBoard_CreateItem_Should_Be_Ok();
-        
+
         // Arrange
         ColumnValue[] columnValues =
         [
@@ -188,10 +189,8 @@ public class FunctionalTests
         };
 
         // Act
-        NET.Application.MondayResponse<Item> mondayResponse =
-            await MondayClient!.CreateBoardItemsAsync(BoardId,
-                [item]); //hard-coded BoardID to properly match the fields of a test-Board
-        
+        _ = await MondayClient!.CreateBoardItemsAsync(BoardId, [item]); //hard-coded BoardID to properly match the fields of a test-Board
+
         // Arrange
         ColumnValue[] columnValues =
         [
@@ -572,7 +571,7 @@ public class FunctionalTests
     public async Task DeleteItem_Should_Be_Ok()
     {
         await this.TestBoard_CreateItem_Should_Be_Ok();
-        
+
         // Arrange
         Item item = new()
         {
@@ -711,7 +710,7 @@ public class FunctionalTests
         NET.Application.MondayResponse<Board> boards = await MondayClient!.GetBoardsAsync();
 
         // Assert
-        Assert.IsTrue(boards.Response?.Count <= 10);
+        Assert.IsTrue(boards.Response?.Count <=10);
     }
 
     [TestMethod]
@@ -889,13 +888,13 @@ public class FunctionalTests
         {
             ItemId = mondayResponse.Response.FirstOrDefault()?.Data?.Id,
             FileUpload = new FileUpload()
-                { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
+            { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
         Update update1 = new()
         {
             ItemId = mondayResponse.Response.FirstOrDefault()?.Data?.Id,
             FileUpload = new FileUpload()
-                { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
+            { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
 
         // Act
@@ -988,7 +987,7 @@ public class FunctionalTests
             {
                 PeopleAndTeams = new Dictionary<ulong, PeopleAndTeamsEntry>()
                 {
-                    { 12254632, new PeopleAndTeamsEntry(MondayPeopleEntityType.Person) } 
+                    { 12254632, new PeopleAndTeamsEntry(MondayPeopleEntityType.Person) }
                 }
             }
         };
@@ -1074,7 +1073,7 @@ public class FunctionalTests
             {
                 PeopleAndTeams = new Dictionary<ulong, PeopleAndTeamsEntry>()
                 {
-                    { 12254632, new PeopleAndTeamsEntry(MondayPeopleEntityType.Person) } 
+                    { 12254632, new PeopleAndTeamsEntry(MondayPeopleEntityType.Person) }
                 }
             }
         };
@@ -1108,7 +1107,7 @@ public class FunctionalTests
 
         // Attempt To Update The Item.
         mondayResponse = await MondayClient!.UpdateBoardItemsAsync<TestRow>(BoardId, [testRow]);
-        
+
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
@@ -1703,7 +1702,7 @@ public class FunctionalTests
         {
             ItemId = mondayResponse.Response.FirstOrDefault()?.Data?.Id,
             FileUpload = new FileUpload()
-                { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
+            { FileName = "test.txt", StreamContent = new StreamContent(File.OpenRead("test.txt")) }
         };
 
         // Act
@@ -1745,7 +1744,7 @@ public class FunctionalTests
         Assert.IsTrue(mondayResponse.Response?.Count == 1);
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == item.Id);
     }
-    
+
     [TestMethod]
     public async Task Update_Board_Item_Name_Should_Be_Ok()
     {
@@ -1769,20 +1768,20 @@ public class FunctionalTests
         Assert.IsTrue(mondayResponse.Response?.All(x => x.Data?.Id != 0));
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Name == testRow.Name);
         Assert.IsNull(mondayResponse.Errors);
-        
+
         // Act
-        List<Customer> items = new List<Customer>();
-        MondayData<Customer>? item = mondayResponse.Response?.FirstOrDefault();
-        
+        List<Customer> items = [];
+        NET.Application.MondayData<Customer>? item = mondayResponse.Response?.FirstOrDefault();
+
         // Assert
         Assert.IsNotNull(item);
         Assert.IsTrue(item.Data?.Id > 0);
-        
+
         // Arrange
         item.Data.Name = "Updated Item";
         items.Add(item.Data);
-        MondayResponse<Customer> updatedItem = await this.MondayClient.UpdateBoardItemsAsync<Customer>(this.BoardId, items.ToArray());
-        
+        NET.Application.MondayResponse<Customer> updatedItem = await this.MondayClient.UpdateBoardItemsAsync<Customer>(this.BoardId, [.. items]);
+
         // Assert
         Assert.IsTrue(updatedItem.IsSuccessful);
         Assert.IsTrue(updatedItem.Response?.All(x => x.Data?.Id != 0));
@@ -1796,19 +1795,19 @@ public class FunctionalTests
         // Act
         NET.Application.MondayResponse<User> mondayResponse =
             await MondayClient!.GetUsersAsync<User>([]);
-        
+
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Response?.Count > 0);
     }
-    
+
     [TestMethod]
     public async Task Get_Person_Should_Be_Ok()
     {
         // Act
         NET.Application.MondayResponse<User> mondayResponse =
             await MondayClient!.GetUsersAsync<User>([12254632]);
-        
+
         // Assert
         Assert.IsTrue(mondayResponse.IsSuccessful);
         Assert.IsTrue(mondayResponse.Response?.Count == 1);
@@ -1820,7 +1819,7 @@ public class FunctionalTests
     public async Task Get_Item_With_SubItem_Should_Be_Ok()
     {
         // Act
-        MondayResponse<MondayRowWithSubItems> mondayResponse =
+        NET.Application.MondayResponse<MondayRowWithSubItems> mondayResponse =
             await MondayClient!.GetBoardItemAsync<MondayRowWithSubItems>(12010268667);
 
         // Assert
@@ -1828,6 +1827,21 @@ public class FunctionalTests
         Assert.IsTrue(mondayResponse.Response?.Count == 1);
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Id == 12010268667);
         Assert.IsTrue(mondayResponse.Response?.FirstOrDefault()?.Data?.Items.All(x => x.Id > 0));
+    }
+
+    [TestMethod]
+    public async Task GetBoardItemsAsync_HasNullBoardFolderId_Should_Be_Ok()
+    {
+        // Arrange
+        ulong boardId = this.BoardId;
+        int limit = 10;
+
+        // Act
+        NET.Application.MondayResponse<MondayRow> mondayResponse = 
+            await MondayClient!.GetBoardItemsAsync<MondayRow>(boardId, limit);
+
+        // Assert
+        Assert.IsTrue(mondayResponse.IsSuccessful);
     }
 
     public record MondayRowWithSubItems : MondayRow
@@ -1843,15 +1857,15 @@ public class FunctionalTests
 
     public record User : MondayUser
     {
-        
+
     }
-    
+
     public record Customer : MondayRow
     {
         [MondayColumnHeader("text_mkmn7km4")]
         public ColumnText? XeroId { get; set; }
     }
-    
+
     public record TestRowWithGroup : TestRow
     {
         public Group? Group { get; set; }
