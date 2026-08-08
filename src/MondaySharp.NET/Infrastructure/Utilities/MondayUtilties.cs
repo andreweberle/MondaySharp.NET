@@ -31,6 +31,7 @@ internal static partial class MondayUtilities
     internal static readonly Dictionary<Type, string> GetItemsQueryBuilder = new()
     {
         { typeof(Application.Entities.Group), @"group { id title color archived deleted position }" },
+        { typeof(Board), @"board { id name }" },
         { typeof(List<Asset>), @"assets { id name public_url url_thumbnail created_at }" },
         { typeof(List<Update>), @"updates (limit: 100) { id text_body }" },
         { typeof(MondaySubRow),
@@ -98,6 +99,7 @@ internal static partial class MondayUtilities
         // Set the common properties if they exist in the destination type.
         SetPropertyIfExists(destinationType, "Group", source.Group, destination);
         SetPropertyIfExists(destinationType, "Assets", source.Assets, destination);
+        SetPropertyIfExists(destinationType, "Board", source.Board, destination);
         SetPropertyIfExists(destinationType, "Updates", source.Updates, destination);
 
         // Loop the main row column values and set the properties if they exist in the destination type.
